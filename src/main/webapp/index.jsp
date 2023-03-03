@@ -11,9 +11,9 @@
     <script src="js/index.js"></script>
 </head>
 <body style="margin: 0;">
-<div class="panorama-container half-size">
+<div class="panorama-container">
     <div id="panorama"></div>
-    <div class="marker"></div>
+    <div class="marker template"></div>
     <div class="overlay"></div>
     <div class="mode-indicator"></div>
     <div class="pano-mid-x"></div>
@@ -22,17 +22,82 @@
 
 <div class="dummy-image-container" style="position: absolute; overflow: hidden; pointer-events: none; z-index: -1;">
     <img src="" width="100%" height="100%" class="dummy-image" style="top: 0; left: 0;">
-    <div class="dummy-marker"></div>
+    <div class="dummy-marker template"></div>
 </div>
 
-<div class="pano-image">
-    <div class="pano-image-marker"></div>
-    <img src="sv-2.jpg" width="850px">
+<%--<div class="pano-image">--%>
+<%--    <div class="pano-image-marker"></div>--%>
+<%--    <img src="sv-2.jpg" width="850px">--%>
+<%--</div>--%>
+
+<div class="actions-toolbar-overlay-container">
+    <div class="actions-toolbar-overlay">
+        <div class="actions-toolbar">
+            <div class="actions-toolbar-item show-labels-toolbar">
+                <div class="actions-toolbar-item-icon">
+
+                </div>
+                <div class="actions-toolbar-item-text">Label</div>
+            </div>
+            <div class="actions-toolbar-item save-image">
+                <div class="actions-toolbar-item-icon">
+
+                </div>
+                <div class="actions-toolbar-item-text">Save Image</div>
+            </div>
+        </div>
+    </div>
 </div>
 
-<div class="screen-capture">
-    Take a screenshot
+<div class="label-toolbar-overlay-container" style="display: none;">
+    <div class="label-toolbar-overlay">
+        <div class="label-toolbar">
+            <div class="label-toolbar-item go-back" >
+                <div class="label-toolbar-item-icon">
+
+                </div>
+                <div class="label-toolbar-item-text">Back</div>
+            </div>
+            <div class="label-toolbar-item place-label" data-label-type="signage">
+                <div class="label-toolbar-item-icon">
+
+                </div>
+                <div class="label-toolbar-item-text">Signage</div>
+            </div>
+            <div class="label-toolbar-item place-label" data-label-type="boarding-alighting">
+                <div class="label-toolbar-item-icon">
+
+                </div>
+                <div class="label-toolbar-item-text">Boarding and Alighting</div>
+            </div>
+            <div class="label-toolbar-item place-label" data-label-type="surface-material">
+                <div class="label-toolbar-item-icon">
+
+                </div>
+                <div class="label-toolbar-item-text">Surface (Material)</div>
+            </div>
+            <div class="label-toolbar-item place-label" data-label-type="surface-grade">
+                <div class="label-toolbar-item-icon">
+
+                </div>
+                <div class="label-toolbar-item-text">Surface (Grade)</div>
+            </div>
+
+            <div class="label-toolbar-item stop-labeling">
+                <div class="label-toolbar-item-icon">
+
+                </div>
+                <div class="label-toolbar-item-text">Done</div>
+            </div>
+        </div>
+
+
+    </div>
 </div>
+
+<%--<div class="screen-capture">--%>
+<%--    Take a screenshot--%>
+<%--</div>--%>
 
 <script>
     var panorama;

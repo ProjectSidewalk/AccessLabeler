@@ -30,12 +30,13 @@
     background: crimson;
     border-radius: 50%;
     z-index: 1;
-    border: 3px solid crimson;
 }
 
 .mode-indicator {
-    position: absolute; height: 100%; width: 100%; top: 0; left: 0; z-index: 2; pointer-events: none; border: 5px solid red; box-sizing: border-box;
+    position: absolute; height: 100%; width: 100%; top: 0; left: 0; z-index: 2; pointer-events: none; border: 5px solid transparent; box-sizing: border-box;
 }
+
+.mode-indicator.marking { border-color: crimson; }
 
 .pano-mid-x {
     position: absolute; height: 100%; width: 1px;  background: crimson; left: 50%; transform: translateX(-50%); top: 0; z-index: 2;
@@ -62,6 +63,22 @@
 
 .dummy-marker { position: absolute; height: 30px; width: 30px; background: red; border-radius: 50%; transform: translate(-50%, -50%); }
 
-.overlay { position: absolute; height: 100%; width: 100%; top: 0; left: 0; z-index: 2; }
+.overlay { position: absolute; height: 100%; width: 100%; top: 0; left: 0; z-index: 2; pointer-events: none; }
 
 .screen-capture { position: absolute; bottom: 0; height: 50px; display: flex; align-content: center; justify-content: center; background: burlywood; width: 100%; padding: 10px; cursor: pointer; }
+
+.actions-toolbar-overlay-container, .label-toolbar-overlay-container { z-index: 2; width: fit-content; height: 70px; background: white; position: absolute; left: 50%; transform: translateX(-50%); bottom: 0; padding: 10px; border-top-left-radius: 10px; border-top-right-radius: 10px; }
+.label-toolbar-overlay-container { width: 750px; }
+.actions-toolbar, .label-toolbar { display: flex; }
+.actions-toolbar-item, .label-toolbar-item { border: 2px solid crimson; padding: 10px; cursor: pointer; border-radius: 5px; }
+
+.marker-signage { background: #3a3ae3; }
+.marker-boarding-alighting { background: #e33ac1; }
+
+
+.stop-labeling { border: 3px solid green; margin-left: 20px; }
+
+.go-back { border-color: black; margin-right: 20px;}
+
+
+.template { display: none; }

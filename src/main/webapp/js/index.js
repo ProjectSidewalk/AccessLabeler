@@ -1,7 +1,11 @@
 $(function() {
     let isMouseDown = false;
 
-    var $marker = $('.marker');
+    let isMarking = false;
+
+    let currentLabelType = null;
+
+    var $markers = $('.marker');
     var $panorama = $('#panorama');
 
     /**
@@ -236,77 +240,22 @@ $(function() {
         // $('.pano-image-marker').css({'margin-left': p.left, 'margin-top': p.top});
     }
 
-    let isMarking = true;
-
-    $(document).on('keypress', function(e) {
-        if (e.which == 13) {
-            isMarking = !isMarking;
-            if (isMarking) {
-                $('.overlay').css({'pointer-events': 'all'});
-                $('.mode-indicator').fadeIn(200);
-            } else {
-                $('.overlay').css({'pointer-events': 'none'});
-                $('.mode-indicator').fadeOut(200);
-            }
-        } else if (e.key == 'r') {
-            if ($('.panorama-container').hasClass('half-size')) {
-                $('.panorama-container').removeClass('half-size');
-            } else {
-                $('.panorama-container').addClass('half-size');
-            }
-        }
-    })
-
-    let lastPov;
-
-    $(document).on('click', function(e) {
-
-        if (isMarking) {
-            const x = e.clientX - $panorama.offset().left;
-            const y = e.clientY - $panorama.offset().top;
-            const pov = panorama.getPov();
-            const position = getPosition(x, y, $panorama.width(), $panorama.height(), 1, pov.heading, pov.pitch);
-            var newCoords = povToPixel3d(position, panorama.getPov(), 1, $panorama.width(), $panorama.height());
-            console.log(newCoords);
-            $marker.css({'left': newCoords.left, 'top': newCoords.top});
-            lastPov = position;
-
-        } else {
-            // getPosition($marker.position().left, $marker.position().top, $panorama.width(), $panorama.height(), 1)
-            var newCoords = povToPixel3d( lastPov, panorama.getPov(), 1, $panorama.width(), $panorama.height());
-            console.log(newCoords);
-            // $marker.css({'left': newCoords.left, 'top': newCoords.top});
-
-            drawMarkerOnImage();
-        }
-    })
-
-    $(document).on('mousedown', function () {
-        if (!lastPov) {
-            lastPov = panorama.getPov();
-        }
-        isMouseDown = true;
-    })
-
-    $(document).on('mouseup', function () {
-        isMouseDown = false;
-    })
-
-    $(document).on('mousemove', function () {
-        if (!isMarking && isMouseDown) {
-            var newCoords = povToPixel3d(lastPov, panorama.getPov(), 1, $panorama.width(), $panorama.height());
-            $marker.css({'left': newCoords.left, 'top': newCoords.top});
-        }
-    });
-
-    $('.screen-capture').click(function() {
-
+    function takeAndSaveScreenshot() {
         const $dummyImageContainer = $('.dummy-image-container');
 
         const $panoContainer = $('.panorama-container');
         $dummyImageContainer.css({'height': $panoContainer.height(), 'width': $panoContainer.width(), 'top': $panoContainer.position().top, 'left': $panoContainer.position().left});
-        const $marker = $('.marker');
-        $('.dummy-marker').css({'top': $marker.position().top + $marker.height()/2, 'left': $marker.position().left + $marker.width()/2});
+
+        // clear existing dummy markers as they might have moved
+        $('.dummy-marker:not(.template)').remove();
+
+        $('.marker:not(template)').each(function() {
+            const $marker = $(this);
+            const $dummyMarker = $('.dummy-marker.template').clone().removeClass('template');
+            $dummyMarker.css({'top': $marker.position().top + $marker.height()/2, 'left': $marker.position().left + $marker.width()/2});
+            $dummyMarker.appendTo($dummyImageContainer);
+            $dummyMarker.addClass($marker.attr('class'));
+        });
 
         var webglImage = (function convertCanvasToImage(canvas) {
             var image = new Image();
@@ -334,6 +283,15 @@ $(function() {
 
             $('.dummy-image').attr('src', '');
         });
+    }
+
+
+    let lastPov;
+
+
+    $('.screen-capture').click(function() {
+
+        takeAndSaveScreenshot();
 
     });
 
@@ -341,5 +299,124 @@ $(function() {
     function isMobile() {
         return false;
     }
+
+    function showLabels() {
+        $('.label-toolbar-overlay-container').show();
+    }
+
+    function placeLabel(e, labelType) {
+        const x = e.clientX - $panorama.offset().left;
+        const y = e.clientY - $panorama.offset().top;
+        const pov = panorama.getPov();
+        const position = getPosition(x, y, $panorama.width(), $panorama.height(), 1, pov.heading, pov.pitch);
+        var newCoords = povToPixel3d(position, panorama.getPov(), 1, $panorama.width(), $panorama.height());
+
+        const $marker = $('.marker.template').clone().removeClass('template');
+
+        $marker.css({'left': newCoords.left, 'top': newCoords.top});
+
+        $marker.attr('data-x', x);
+        $marker.attr('data-y', y);
+
+        lastPov = {
+            heading: pov.heading,
+            pitch: pov.pitch
+        };
+
+        $marker.addClass('marker-' + labelType);
+
+        $('.panorama-container').append($marker);
+    }
+
+    function moveMarkers() {
+
+        $('.marker').each(function() {
+
+            const $marker = $(this);
+            const position = getPosition(parseInt($marker.attr('data-x')), parseInt($marker.attr('data-y')), $panorama.width(), $panorama.height(), 1, lastPov.heading, lastPov.pitch);
+            const newCoords = povToPixel3d(position, panorama.getPov(), 1, $panorama.width(), $panorama.height());
+            $marker.css({'left': newCoords.left, 'top': newCoords.top});
+        });
+    }
+
+    function setupEventHandlers() {
+
+        function startLabelingHandler() {
+
+            const labelType = $(this).attr('data-label-type');
+            currentLabelType = labelType;
+            isMarking = true;
+            $('.mode-indicator').addClass('marking');
+
+            $('.overlay').css({'pointer-events': 'all'});
+            $('.mode-indicator').fadeIn(200);
+        }
+
+        function stopLabelingHandler() {
+            isMarking = false;
+            $('.mode-indicator').removeClass('marking');
+
+            $('.overlay').css({'pointer-events': 'none'});
+            $('.mode-indicator').fadeOut(200);
+        }
+
+        function placeLabelHandler() {
+            $('.actions-toolbar-overlay-container').hide();
+            showLabels();
+        }
+
+        $('.show-labels-toolbar').on('click', placeLabelHandler);
+
+        $('.place-label').click(startLabelingHandler);
+
+        $('.stop-labeling').click(stopLabelingHandler);
+
+        $('.go-back').click(function () {
+            $('.label-toolbar-overlay-container').hide();
+            $('.actions-toolbar-overlay-container').show();
+        });
+
+        $('.save-image').click(takeAndSaveScreenshot);
+
+        $(document).on('keypress', function(e) {
+            if (e.key == 'r') {
+                if ($('.panorama-container').hasClass('half-size')) {
+                    $('.panorama-container').removeClass('half-size');
+                } else {
+                    $('.panorama-container').addClass('half-size');
+                }
+            }
+        });
+
+        $(document).on('mousedown', function () {
+            if (!lastPov) {
+                lastPov = panorama.getPov();
+            }
+            isMouseDown = true;
+        })
+
+        $(document).on('mouseup', function () {
+            isMouseDown = false;
+        })
+
+        $(document).on('mousemove', function () {
+            if (!isMarking && isMouseDown) {
+                moveMarkers();
+            }
+        });
+
+        $('.panorama-container').on('click', function(e) {
+
+            if (isMarking) {
+                placeLabel(e, currentLabelType);
+            } else {
+                moveMarkers();
+
+                // drawMarkerOnImage();
+            }
+        })
+    }
+
+    setupEventHandlers();
 });
 
