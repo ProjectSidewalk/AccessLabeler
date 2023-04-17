@@ -5,13 +5,21 @@
     <link rel="stylesheet" href="css/index.css">
 
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/css/bootstrap.min.css" integrity="sha384-rbsA2VBKQhggwzxH7pPCaAqO46MgnOM80zW1RWuH61DGLwZJEdK2Kadq2F9CUG65" crossorigin="anonymous">
+
+    <!-- Using jsDelivr -->
+<%--    <script src="https://cdn.jsdelivr.net/npm/@xenova/transformers/dist/transformers.min.js"></script>--%>
+
     <script src="https://code.jquery.com/jquery-3.6.3.min.js" integrity="sha256-pvPw+upLPUjgMXY0G+8O0xUf+/Im1MZjXxxgOcBQBXU=" crossorigin="anonymous"></script>
     <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
+
+    <script src="https://cdn.jsdelivr.net/npm/onnxruntime-web/dist/ort.min.js"></script>
+    <script src="https://docs.opencv.org/4.7.0/opencv.js"></script>
 
     <script src="js/index.js"></script>
 </head>
 <body style="margin: 0;">
 <div class="panorama-container">
+    <div class="box template"></div>
     <div id="panorama"></div>
     <div class="marker template"></div>
     <div class="overlay"></div>
@@ -43,7 +51,7 @@
                 <div class="actions-toolbar-item-icon">
 
                 </div>
-                <div class="actions-toolbar-item-text">Save Image</div>
+                <div class="actions-toolbar-item-text">Analyze Image</div>
             </div>
         </div>
     </div>
@@ -99,6 +107,10 @@
 <%--    Take a screenshot--%>
 <%--</div>--%>
 
+<%
+    String latLng = request.getParameter("loc");
+%>
+
 <script>
     var panorama;
     function initMap() {
@@ -114,15 +126,23 @@
             };
         }(HTMLCanvasElement.prototype.getContext);
 
+        const latLng = "47.5991394,-122.3178654";
+
+        console.log(latLng.split(',')[0] + ' : ' + latLng.split(',')[1]);
+
         panorama = new google.maps.StreetViewPanorama(
             document.getElementById('panorama'),
-            {
-                position: {lat: 37.86919356787275, lng: -122.2553389429576},
-                pov: {heading: 0, pitch: 0},
+        {
+                position: {lat: parseFloat(latLng.split(',')[0]), lng: parseFloat(latLng.split(',')[1])},
+                pov: {heading: 0, pitch: -10},
                 zoom: 1
             }, function () {
                 panorama.setPov(panorama.getPhotographerPov());
             });
+
+        panorama.addListener("pov_changed", () => {
+            $('.box:not(.template)').remove();
+        });
     }
 </script>
 <script async defer

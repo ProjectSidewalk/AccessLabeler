@@ -30,7 +30,7 @@ public class FileManager {
             BufferedImage image = ImageIO.read(new ByteArrayInputStream(decodedBytes));
 
             File output = new File(baseDirPath + File.separator + name);
-            ImageIO.write(image, "png", output);
+            ImageIO.write(image, "jpg", output);
 
             return true;
         } catch (IOException e) {

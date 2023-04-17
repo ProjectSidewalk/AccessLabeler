@@ -3,8 +3,8 @@
     top: 50%;
     left: 50%;
     transform: translate(-50%, -50%);
-    height: 100vh;
-    width: 100vw;
+    height: 640px;
+    width: 640px;
     transition: all 0.1s;
     overflow: hidden;
 }
@@ -72,8 +72,10 @@
 .actions-toolbar, .label-toolbar { display: flex; }
 .actions-toolbar-item, .label-toolbar-item { border: 2px solid crimson; padding: 10px; cursor: pointer; border-radius: 5px; }
 
-.marker-signage { background: #3a3ae3; }
-.marker-boarding-alighting { background: #e33ac1; }
+.actions-toolbar-item:hover, .label-toolbar-item:hover { background: lightgoldenrodyellow; }
+
+.marker-signage { background: #3ae351; }
+.marker-boarding-alighting { background: #ff842f; }
 
 
 .stop-labeling { border: 3px solid green; margin-left: 20px; }
@@ -82,3 +84,15 @@
 
 
 .template { display: none; }
+
+/*.box { position: absolute; background: rgba(255, 200, 0, 0.15); z-index: 1; }*/
+/*.box.bench { background: rgba(220, 20, 60, 0.35); border: 2px solid crimson; }*/
+
+.box { z-index: 10; border-radius: 3px; position: absolute; pointer-events: none; }
+.box.label-0 { border: 2px solid gold; background: rgba(255, 215, 0, 0.2); }
+.box.label-1 { border: 2px solid crimson; background: rgba(220, 20, 60, 0.2); }
+.box.label-2 { border: 2px solid deepskyblue; background: rgba(0, 191, 255, 0.2); }
+
+.box.label-0::before { content: "Seating"; padding: 5px; position: absolute; top: -35px; left: 50%; transform: translateX(-50%); background: gold; color: black; border-radius: 5px; font-size: 12px; }
+.box.label-1::before { content: "Shelter"; padding: 5px; position: absolute; top: -35px; left: 50%; transform: translateX(-50%); background: #ff6a87; color: black; border-radius: 5px; font-size: 12px; }
+.box.label-2::before { content: "Signage"; padding: 5px; position: absolute; top: -35px; left: 50%; transform: translateX(-50%); background: deepskyblue; color: black; border-radius: 5px; font-size: 12px; }
