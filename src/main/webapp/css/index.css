@@ -1,10 +1,14 @@
+body {
+    font-family: Avenir;
+}
+
 .panorama-container {
     position: absolute;
     top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    height: 640px;
-    width: 640px;
+    left: 0;
+    transform: translateY(-50%);
+    height: 100vh;
+    width: 70%;
     transition: all 0.1s;
     overflow: hidden;
 }
@@ -67,7 +71,9 @@
 
 .screen-capture { position: absolute; bottom: 0; height: 50px; display: flex; align-content: center; justify-content: center; background: burlywood; width: 100%; padding: 10px; cursor: pointer; }
 
-.actions-toolbar-overlay-container, .label-toolbar-overlay-container { z-index: 2; width: fit-content; height: 70px; background: white; position: absolute; left: 50%; transform: translateX(-50%); bottom: 0; padding: 10px; border-top-left-radius: 10px; border-top-right-radius: 10px; }
+
+.actions-toolbar-overlay-container, .label-toolbar-overlay-container { pointer-events: none; width: 70%; display: flex; justify-content: center; z-index: 2; height: 70px; position: absolute; bottom: 0; padding: 10px; border-top-left-radius: 10px; border-top-right-radius: 10px; }
+.actions-toolbar-overlay { width: fit-content; background: white; padding: 10px; position: absolute; height: 100%; pointer-events: all; }
 .label-toolbar-overlay-container { width: 750px; }
 .actions-toolbar, .label-toolbar { display: flex; }
 .actions-toolbar-item, .label-toolbar-item { border: 2px solid crimson; padding: 10px; cursor: pointer; border-radius: 5px; }
@@ -85,14 +91,26 @@
 
 .template { display: none; }
 
+.status-indicator { position: absolute; text-align: center; left: 0; width: calc(70% - 200px); top: 20px; font-weight: bold; color: crimson; font-family: Avenir; z-index: 2; background: white; padding: 5px; border-radius: 5px; margin: 0 100px; }
+
 /*.box { position: absolute; background: rgba(255, 200, 0, 0.15); z-index: 1; }*/
 /*.box.bench { background: rgba(220, 20, 60, 0.35); border: 2px solid crimson; }*/
 
-.box { z-index: 10; border-radius: 3px; position: absolute; pointer-events: none; }
-.box.label-0 { border: 2px solid gold; background: rgba(255, 215, 0, 0.2); }
-.box.label-1 { border: 2px solid crimson; background: rgba(220, 20, 60, 0.2); }
-.box.label-2 { border: 2px solid deepskyblue; background: rgba(0, 191, 255, 0.2); }
+.object-boundary { z-index: 10; border-radius: 3px; position: absolute; pointer-events: none; }
 
-.box.label-0::before { content: "Seating"; padding: 5px; position: absolute; top: -35px; left: 50%; transform: translateX(-50%); background: gold; color: black; border-radius: 5px; font-size: 12px; }
-.box.label-1::before { content: "Shelter"; padding: 5px; position: absolute; top: -35px; left: 50%; transform: translateX(-50%); background: #ff6a87; color: black; border-radius: 5px; font-size: 12px; }
-.box.label-2::before { content: "Signage"; padding: 5px; position: absolute; top: -35px; left: 50%; transform: translateX(-50%); background: deepskyblue; color: black; border-radius: 5px; font-size: 12px; }
+.object-boundary-correct, .object-boundary-incorrect { display: flex; margin: 3px; }
+.object-boundary-label { width: 150px; pointer-events: all; display: flex; }
+.object-boundary-label-text { display: flex; }
+.object-boundary.label-0 { border: 2px solid gold; background: rgba(255, 215, 0, 0.2); }
+.object-boundary.label-1 { border: 2px solid crimson; background: rgba(220, 20, 60, 0.2); }
+.object-boundary.label-2 { border: 2px solid deepskyblue; background: rgba(0, 191, 255, 0.2); }
+
+.object-boundary.label-0 .object-boundary-label { width: fit-content; padding: 5px; position: absolute; top: -35px; left: 50%; transform: translateX(-50%); background: gold; color: black; border-radius: 5px; font-size: 12px; }
+.object-boundary.label-1 .object-boundary-label { width: fit-content; padding: 5px; position: absolute; top: -35px; left: 50%; transform: translateX(-50%); background: #ff6a87; color: black; border-radius: 5px; font-size: 12px; }
+.object-boundary.label-2 .object-boundary-label { width: fit-content; padding: 5px; position: absolute; top: -35px; left: 50%; transform: translateX(-50%); background: deepskyblue; color: black; border-radius: 5px; font-size: 12px; }
+
+.sidebar { width: 29%; position: absolute; right: 0; height: 100vh; padding: 20px; border-left: 2px solid #121212; overflow-y: auto; }
+
+.sidebar-title { font-size: 24px; font-weight: bold; }
+.sidebar-section { margin-top: 20px; height: 300px; border-bottom: 1px solid grey; }
+.sidebar-section-title { font-size: 20px; }

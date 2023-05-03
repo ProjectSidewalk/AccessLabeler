@@ -15,11 +15,20 @@
     <script src="https://cdn.jsdelivr.net/npm/onnxruntime-web/dist/ort.min.js"></script>
     <script src="https://docs.opencv.org/4.7.0/opencv.js"></script>
 
+    <script src="js/data.js"></script>
     <script src="js/index.js"></script>
 </head>
 <body style="margin: 0;">
+
+<div class="status-indicator">Move the pano to start detecting</div>
 <div class="panorama-container">
-    <div class="box template"></div>
+    <div class="object-boundary template">
+        <div class="object-boundary-label">
+            <div class="object-boundary-label-text"></div>
+            <div class="object-boundary-correct">&#x2705;</div>
+            <div class="object-boundary-incorrect">&#x274C;</div>
+        </div>
+    </div>
     <div id="panorama"></div>
     <div class="marker template"></div>
     <div class="overlay"></div>
@@ -33,10 +42,25 @@
     <div class="dummy-marker template"></div>
 </div>
 
-<%--<div class="pano-image">--%>
-<%--    <div class="pano-image-marker"></div>--%>
-<%--    <img src="sv-2.jpg" width="850px">--%>
-<%--</div>--%>
+<%--<img src="sv.jpg" width="100%" style="z-index: 100;" class="abcd">--%>
+
+<div class="sidebar">
+    <div class="sidebar-title">Sidebar</div>
+    <div class="sidebar-content">
+        <div class="sidebar-section sidebar-section-1">
+            <div class="sidebar-section-title">Section 1</div>
+            <div class="sidebar-section-content">Content</div>
+        </div>
+        <div class="sidebar-section sidebar-section-2">
+            <div class="sidebar-section-title">Section 2</div>
+            <div class="sidebar-section-content">Content</div>
+        </div>
+        <div class="sidebar-section sidebar-section-3">
+            <div class="sidebar-section-title">Section 3</div>
+            <div class="sidebar-section-content">Content</div>
+        </div>
+    </div>
+</div>
 
 <div class="actions-toolbar-overlay-container">
     <div class="actions-toolbar-overlay">
@@ -53,6 +77,19 @@
                 </div>
                 <div class="actions-toolbar-item-text">Analyze Image</div>
             </div>
+            <div class="actions-toolbar-item previous-location" style="margin-left: 50px;">
+                <div class="actions-toolbar-item-icon">
+
+                </div>
+                <div class="actions-toolbar-item-text">Previous</div>
+            </div>
+            <div class="actions-toolbar-item next-location">
+                <div class="actions-toolbar-item-icon">
+
+                </div>
+                <div class="actions-toolbar-item-text">Next</div>
+            </div>
+
         </div>
     </div>
 </div>
@@ -126,7 +163,15 @@
             };
         }(HTMLCanvasElement.prototype.getContext);
 
-        const latLng = "47.5991394,-122.3178654";
+        // const latLng = "47.6327022,-122.2279419";
+        // const latLng = "47.6637776,-122.3008794";
+        // const latLng = "47.6627831,-122.3008315";
+        // const latLng = "47.66853,-122.290514";
+        // const latLng = "47.6572767,-122.3046887";
+        // const latLng = "47.6539783,-122.3051593";
+        // const latLng = "47.6523437,-122.3062897";
+        // const latLng = "47.6557727,-122.3120149";
+        const latLng = "47.6593773,-122.3119228";
 
         console.log(latLng.split(',')[0] + ' : ' + latLng.split(',')[1]);
 
@@ -140,8 +185,9 @@
                 panorama.setPov(panorama.getPhotographerPov());
             });
 
+
         panorama.addListener("pov_changed", () => {
-            $('.box:not(.template)').remove();
+            $('.object-boundary:not(.template)').remove();
         });
     }
 </script>

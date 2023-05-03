@@ -1,3 +1,7 @@
+function get(name){
+    if(name=(new RegExp('[?&]'+encodeURIComponent(name)+'=([^&]*)')).exec(location.search))
+        return decodeURIComponent(name[1]);
+}
 $(function() {
     let isMouseDown = false;
 
@@ -11,7 +15,26 @@ $(function() {
     let startTime = null;
     let endTime = null;
 
+    let dataIDX = get('idx') ? get('idx') : 250;
+
     const worker = new Worker('js/worker.js');
+
+    const GSVScaleX = $('.panorama-container').width()/640;
+    const GSVScaleY = $('.panorama-container').height()/640;
+
+    const LABEL_TYPES = {
+        0: 'Seating',
+        1: 'Shelter',
+        2: 'Signage'
+    }
+
+    let areBoxesDrawn = false;
+
+    const dummyBox = {
+        bounding: [60.79486846923828, 222.09311096191405, 152.9200897216797, 89.72289733886718],
+        label: 1,
+        probability: 0.9720821380615234
+    }
 
     /**
      * Calculates heading and pitch for a Google Maps marker using (x, y) coordinates
@@ -245,7 +268,14 @@ $(function() {
         // $('.pano-image-marker').css({'margin-left': p.left, 'margin-top': p.top});
     }
 
+    setTimeout(function() {
+        $('.dummy-image').attr('src', $('.abcd').attr('src'));
+    }, 1000);
+
     function takeAndSaveScreenshot() {
+
+        $('.status-indicator').text('Detecting...');
+
         const $dummyImageContainer = $('.dummy-image-container');
 
         const $panoContainer = $('.panorama-container');
@@ -342,110 +372,22 @@ $(function() {
             const newCoords = povToPixel3d(position, panorama.getPov(), 1, $panorama.width(), $panorama.height());
             $marker.css({'left': newCoords.left, 'top': newCoords.top});
         });
+        //
+        // $('.object-boundary').each(function() {
+        //     const $boundary = $(this);
+        //     const position  = getPosition(parseFloat($boundary.attr('data-x')), parseFloat($boundary.attr('data-y')), $panorama.width(), $panorama.height(), 1, lastPov.heading, lastPov.pitch);
+        //     const newCoords = povToPixel3d(position, panorama.getPov(), 1, $panorama.width(), $panorama.height());
+        //     $boundary.css({'left': newCoords.left, 'top': newCoords.top});
+        // });
     }
 
     // Utility functions
-
-    function htmlToElement(html) {
-        // https://stackoverflow.com/a/35385518
-        let template = document.createElement('template');
-        html = html.trim(); // Never return a text node of whitespace as the result
-        template.innerHTML = html;
-        return template.content.firstChild;
-    }
-
-    function formatBytes(bytes, decimals = 0) {
-        const sizes = ["Bytes", "KB", "MB", "GB", "TB"];
-        if (bytes === 0) return "0 Bytes";
-        const i = parseInt(Math.floor(Math.log(bytes) / Math.log(1000)), 10);
-        const rounded = (bytes / Math.pow(1000, i)).toFixed(decimals);
-        return rounded + " " + sizes[i];
-    }
-
-    function getImageDataFromImage(original) {
-
-        // Helper function to get image data from image element
-        const canvas = document.createElement('canvas');
-        canvas.width = original.naturalWidth;
-        canvas.height = original.naturalHeight;
-
-        const ctx = canvas.getContext('2d');
-        // TODO play around with ctx options?
-        // ctx.patternQuality = 'bilinear';
-        // ctx.quality = 'bilinear';
-        // ctx.antialias = 'default';
-        // ctx.imageSmoothingQuality = 'high';
-
-        ctx.drawImage(original, 0, 0, canvas.width, canvas.height);
-        return canvas.toDataURL();
-    }
-
-    function renderObjectOutlines(data) {
-
-        $('.box:not(.template)').remove();
-
-        const container = $('.panorama-container');
-        const containerWidth = container.width();
-        const containerHeight = container.height();
-
-        for (let i = 0; i < data.boxes.length; i++) {
-            const box = data.boxes[i];
-            const $box = $('.box.template').clone().removeClass('template');
-            $box.addClass(data.labels[i]);
-            $box.css({'left': box[0] * containerWidth, 'top': box[1] * containerHeight, 'width': (box[2] - box[0]) * containerWidth, 'height': (box[3] - box[1]) * containerHeight});
-            $box.appendTo($('.panorama-container'));
-
-            $box.attr('title', data.labels[i]);
-        }
-    }
 
     worker.addEventListener('message', (event) => {
 
         const message = event.data;
 
-        console.log(message);
-
-        switch (message.type) {
-            case 'download': // for session creation
-
-                break;
-            case 'update': // for generation
-                let target = message.target;
-                let elem = document.getElementById(target);
-
-                switch (message.targetType) {
-                    case 'code':
-                        CODE_BLOCKS[target].update(message.data);
-                        break;
-                    default: // is textbox
-                        elem.value = message.data
-                        break;
-                }
-
-                break;
-
-            case 'complete':
-                switch (message.targetType) {
-
-                    case 'overlay':
-
-                        endTime = new Date().getTime();
-                        console.log('Time taken: ' + (endTime - startTime) + 'ms');
-
-                        console.log(message.data);
-                        // alert('Labels: ' + message.data.labels);
-
-                        renderObjectOutlines(message.data);
-
-                        break;
-                    default: // is text
-                        document.getElementById(message.target).value = message.data
-                        break;
-                }
-                break;
-            default:
-                break;
-        }
+        console.log("from worker: " + JSON.stringify(message));
     });
 
     function setupEventHandlers() {
@@ -467,7 +409,6 @@ $(function() {
             // clear existing dummy markers as they might have moved
             $('.dummy-marker:not(.template)').remove();
 
-
             var webglImage = (function convertCanvasToImage(canvas) {
                 var image = new Image();
                 image.src = canvas.toDataURL('image/png', 0.5);
@@ -487,7 +428,6 @@ $(function() {
                 worker.postMessage(data);
 
             });
-
         }
 
         function startLabelingHandler() {
@@ -513,6 +453,33 @@ $(function() {
             $('.actions-toolbar-overlay-container').hide();
             showLabels();
         }
+
+        function getRandomInt(min, max) {
+            min = Math.ceil(min);
+            max = Math.floor(max);
+            return Math.floor(Math.random() * (max - min) + min); // The maximum is exclusive and the minimum is inclusive
+        }
+
+        function nextLocationHandler() {
+            dataIDX = getRandomInt (0, 6200);
+            const location = GIS_DATA.features[dataIDX].geometry.coordinates;
+            panorama.setPosition({lat: location[1], lng: location[0]});
+
+            console.log("Index: " + dataIDX);
+            console.log("Info: " + JSON.stringify(GIS_DATA.features[dataIDX]));
+        }
+
+        function previousLocationHandler() {
+            dataIDX--;
+            const location = GIS_DATA.features[dataIDX].geometry.coordinates;
+            panorama.setPosition({lat: location[1], lng: location[0]});
+
+            console.log("Index: " + dataIDX);
+            console.log("Info: " + JSON.stringify(GIS_DATA.features[dataIDX]));
+        }
+
+        $('.next-location').click(nextLocationHandler);
+        $('.previous-location').click(previousLocationHandler);
 
         $('.show-labels-toolbar').on('click', placeLabelHandler);
 
@@ -546,8 +513,12 @@ $(function() {
             isMouseDown = true;
         })
 
-        $(document).on('mouseup', function () {
+        $(document).on('mouseup', function (e) {
             isMouseDown = false;
+
+            if ($(e.target).hasClass('widget-scene-canvas')) {
+                takeAndSaveScreenshot();
+            }
         })
 
         $(document).on('mousemove', function () {
@@ -562,15 +533,19 @@ $(function() {
                 placeLabel(e, currentLabelType);
             } else {
                 moveMarkers();
-
-                // drawMarkerOnImage();
             }
-        })
+        });
     }
 
-    // panorama.addListener('pov_changed', function () {
-    //     setTimeout(takeAndSaveScreenshot, 100);
-    // });
+    let prevZoom = 1;
+
+    panorama.addListener('pov_changed', function () {
+        const newZoom = panorama.getPov().zoom;
+        if (Number.isInteger(newZoom) && prevZoom !== panorama.getPov().zoom) {
+            prevZoom = panorama.getPov().zoom;
+            setTimeout(takeAndSaveScreenshot, 20);
+        }
+    });
 
     const inputShape = [1, 3, 640, 640];
     const topk = 100;
@@ -579,7 +554,7 @@ $(function() {
 
     function renderBoxes(boxes) {
 
-        $('.box:not(.template)').remove();
+        $('.object-boundary:not(.template)').remove();
 
         for (let i = 0; i < boxes.length; i++) {
             const box = boxes[i];
@@ -587,16 +562,23 @@ $(function() {
             const label = box.label;
             const probability = box.probability;
 
-            const $b = $('.box.template').clone().removeClass('template').addClass('box-' + i);
+            const $b = $('.object-boundary.template').clone().removeClass('template').addClass('object-' + i);
             $b.css({
-                top: y,
-                left: x,
-                width: w,
-                height: h,
+                top: y * GSVScaleY,
+                left: x * GSVScaleX,
+                width: w * GSVScaleX,
+                height: h * GSVScaleY,
             });
             $b.addClass('label-' + label);
+            $b.attr('data-x', (x * GSVScaleX));
+            $b.attr('data-y', (x * GSVScaleY));
+
             $('.panorama-container').append($b);
+
+            $('.object-boundary-label-text', $b).text(LABEL_TYPES[label]);
         }
+
+        // areBoxesDrawn = true;
 
     }
 
@@ -658,7 +640,19 @@ $(function() {
 
     async function analyzeImage() {
 
+        if (areBoxesDrawn)
+            return;
+
+        startTime = new Date().getTime();
+
         const image = $('.dummy-image')[0];
+
+        // let obj = new Image();
+        // obj.src = image.src;
+        //
+        // worker.postMessage({
+        //     image: obj
+        // });
 
         const [modelWidth, modelHeight] = inputShape.slice(2);
         const [input, xRatio, yRatio] = preprocessing(image, modelWidth, modelHeight);
@@ -697,6 +691,15 @@ $(function() {
         console.log(boxes);
 
         renderBoxes(boxes); // Draw boxes
+
+        if (boxes.length === 0) {
+            $('.status-indicator').text('No objects detected. Try moving the panorama or zooming in.');
+        } else {
+            $('.status-indicator').text('Done!');
+        }
+
+        endTime = new Date().getTime();
+        console.log('Time taken: ' + (endTime - startTime) + 'ms');
     }
 
     setupEventHandlers();
