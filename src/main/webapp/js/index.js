@@ -2,6 +2,46 @@ function get(name){
     if(name=(new RegExp('[?&]'+encodeURIComponent(name)+'=([^&]*)')).exec(location.search))
         return decodeURIComponent(name[1]);
 }
+
+const preprocessedData = {
+    "47.6445637,-122.1338495": "1 0.844832 0.528247 0.0409932 0.0779043 0.905118",
+    "47.6617177,-122.3119481": "1 0.704584 0.557155 0.0937297 0.162071 0.971062\n" +
+        "2 0.625372 0.47812 0.0085063 0.0308385 0.935331\n" +
+        "0 0.704038 0.60406 0.0334666 0.0338287 0.881437\n" +
+        "1 0.110114 0.512956 0.014253 0.0334913 0.874534\n" +
+        "1 0.774341 0.553502 0.0763234 0.15143 0.700532\n" +
+        "2 0.017272 0.492008 0.00255307 0.0203148 0.44772",
+    "47.6614376,-122.311893": "1 0.314481 0.52349 0.0318004 0.0521871 0.942006\n" +
+        "2 0.566586 0.473667 0.00286376 0.0110221 0.26537",
+    "47.6612187,-122.309051": "2 0.892311 0.474349 0.00912595 0.0317016 0.973872\n" +
+        "2 0.794235 0.43317 0.00289714 0.0109044 0.651111\n" +
+        "2 0.998317 0.500629 0.00299597 0.0167363 0.339307\n" +
+        "1 0.261304 0.583681 0.102752 0.0818565 0.328842",
+    "47.6667318,-122.3006722": "1 0.260474 0.533033 0.0435681 0.0670648 0.572756\n" +
+        "2 0.0640385 0.491526 0.00577632 0.0140014 0.307124\n",
+    "47.6685445,-122.3011362": "2 0.70106 0.483035 0.00300193 0.0286064 0.936708\n" +
+        "1 0.678225 0.538608 0.052788 0.098722 0.913397\n" +
+        "0 0.677509 0.574488 0.021471 0.0225077 0.680679\n",
+    "47.6681388,-122.3065174": "2 0.161302 0.492935 0.00342825 0.0197073 0.79902",
+    "47.6649327,-122.3111553": "2 0.541395 0.476251 0.00693059 0.022861 0.969058\n" +
+        "2 0.555518 0.486218 0.00254405 0.0136079 0.404816",
+    "47.6593773,-122.3119228": "1 3045.1277 2125.0132 316.4214 195.9888 0.982079\n" +
+        "1 1566.6554 2161.1392 470.4299 245.3348 0.966422\n" +
+        "2 1107.8909 2085.5659 25.1587 96.9712 0.953752\n" +
+        "0 1704.3602 2251.2012 118.7449 55.5771 0.947889\n" +
+        "1 3823.6924 2119.9055 357.2930 270.0059 0.301928\n" +
+        "2 854.3783 2053.1311 18.7090 43.6367 0.262058"
+    // "47.6593773,-122.3119228": "1 4096 2048 100 100 1\n" +
+    //     "1 3045.1277 2125.0132 316.4214 195.9888 0.982079"
+    // "47.6593773,-122.3119228": "1 2048 2048 100 100 1"
+}
+
+function convertXYtoYawPitch(xPercentage, yPercentage) {
+    const yaw = xPercentage * 360;
+    const pitch = (yPercentage - 0.5) * -180;
+    return {heading: yaw, pitch: pitch};
+}
+
 $(function() {
     let isMouseDown = false;
 
@@ -11,6 +51,7 @@ $(function() {
 
     var $markers = $('.marker');
     var $panorama = $('#panorama');
+    const $fullWidthPano = $('.pano-full-width');
 
     let startTime = null;
     let endTime = null;
@@ -19,8 +60,16 @@ $(function() {
 
     const worker = new Worker('js/worker.js');
 
-    const GSVScaleX = $('.panorama-container').width()/640;
-    const GSVScaleY = $('.panorama-container').height()/640;
+    const $panoContainer = $('.panorama-container');
+
+    const panoImageHeight = 4096;
+    const panoImageWidth = 8192;
+
+    const panoImageScale = ($panoContainer.height()/panoImageHeight);
+
+    const markerOffset = 5;
+    const markerSize = 10;
+
 
     const LABEL_TYPES = {
         0: 'Seating',
@@ -98,6 +147,136 @@ $(function() {
         return zoom <= 2 ?
             126.5 - zoom * 36.75 :  // linear descent
             195.93 / Math.pow(1.92, zoom); // parameters determined experimentally
+    }
+
+    /**
+     * 3D projection related functions
+     *
+     * These functions are for positioning the markers when the view is panned.
+     * The library used is adapted from: https://martinmatysiak.de/blog/view/panomarker/en
+     * The math used is from:
+     * http://stackoverflow.com/questions/21591462/get-heading-and-pitch-from-pixels-on-street-view/21753165?noredirect=1#comment72346716_21753165
+     */
+
+    function get3dFov(zoom) {
+        return zoom <= 2 ?
+            126.5 - zoom * 36.75 :  // Linear descent.
+            195.93 / Math.pow(1.92, zoom); // Parameters determined experimentally.
+    }
+
+    /***
+     * For a point centered at `povIfCentered`, compute canvas XY coordinates at `currentPov`.
+     * @return {Object} Top and Left offsets for the given viewport that point to the desired point-of-view.
+     */
+    function povToPixel3DOffset(povIfCentered, currentPov, canvasWidth, canvasHeight) {
+        // Gather required variables and convert to radians where necessary.
+        var target = {
+            left: canvasWidth / 2,
+            top: canvasHeight / 2
+        };
+
+        var DEG_TO_RAD = Math.PI / 180.0;
+        var fov = get3dFov(currentPov.zoom) * DEG_TO_RAD;
+        var h0 = currentPov.heading * DEG_TO_RAD;
+        var p0 = currentPov.pitch * DEG_TO_RAD;
+        var h = povIfCentered.heading * DEG_TO_RAD;
+        var p = povIfCentered.pitch * DEG_TO_RAD;
+
+        // f = focal length = distance of current POV to image plane.
+        var f = (canvasWidth / 2) / Math.tan(fov / 2);
+
+        // Our coordinate system: camera at (0,0,0), heading = pitch = 0 at (0,f,0).
+        // Calculate 3d coordinates of viewport center and target.
+        var cos_p = Math.cos(p);
+        var sin_p = Math.sin(p);
+
+        var cos_h = Math.cos(h);
+        var sin_h = Math.sin(h);
+
+        var x = f * cos_p * sin_h;
+        var y = f * cos_p * cos_h;
+        var z = f * sin_p;
+
+        var cos_p0 = Math.cos(p0);
+        var sin_p0 = Math.sin(p0);
+
+        var cos_h0 = Math.cos(h0);
+        var sin_h0 = Math.sin(h0);
+
+        var x0 = f * cos_p0 * sin_h0;
+        var y0 = f * cos_p0 * cos_h0;
+        var z0 = f * sin_p0;
+
+        var nDotD = x0 * x + y0 * y + z0 * z;
+        var nDotC = x0 * x0 + y0 * y0 + z0 * z0;
+
+        // nDotD == |targetVec| * |currentVec| * cos(theta)
+        // nDotC == |currentVec| * |currentVec| * 1
+        // Note: |currentVec| == |targetVec| == f
+
+        // Sanity check: the vectors shouldn't be perpendicular because the line
+        // from camera through target would never intersect with the image plane.
+        if (Math.abs(nDotD) < 1e-6) {
+            return null;
+        }
+
+        // t is the scale to use for the target vector such that its end
+        // touches the image plane. It's equal to 1/cos(theta) ==
+        //     (distance from camera to image plane through target) /
+        //     (distance from camera to target == f)
+        var t = nDotC / nDotD;
+
+        // Sanity check: it doesn't make sense to scale the vector in a negative direction. In fact, it should even be
+        // t >= 1.0 since the image plane is always outside the pano sphere (except at the viewport center).
+        if (t < 0.0) {
+            return null;
+        }
+
+        // (tx, ty, tz) are the coordinates of the intersection point between a
+        // line through camera and target with the image plane.
+        var tx = t * x;
+        var ty = t * y;
+        var tz = t * z;
+
+        // u and v are the basis vectors for the image plane.
+        var vx = -sin_p0 * sin_h0;
+        var vy = -sin_p0 * cos_h0;
+        var vz = cos_p0;
+
+        var ux = cos_h0;
+        var uy = -sin_h0;
+        var uz = 0;
+
+        // Normalize horiz. basis vector to obtain orthonormal basis.
+        var ul = Math.sqrt(ux * ux + uy * uy + uz * uz);
+        ux /= ul;
+        uy /= ul;
+        uz /= ul;
+
+        // Project the intersection point t onto the basis to obtain offsets in terms of actual pixels in the viewport.
+        var du = tx * ux + ty * uy + tz * uz;
+        var dv = tx * vx + ty * vy + tz * vz;
+
+        // Use the calculated pixel offsets.
+        target.left += du;
+        target.top -= dv;
+        return target;
+    }
+
+    /**
+     * Returns the pov of this label if it were centered based on panorama's POV using panorama XY coordinates.
+     *
+     * @param panoX
+     * @param panoY
+     * @param panoWidth
+     * @param panoHeight
+     * @returns {{heading: Number, pitch: Number}}
+     */
+    function calculatePovFromPanoXY(panoX, panoY, panoWidth, panoHeight) {
+        return {
+            heading: (panoX / panoWidth) * 360 % 360,
+            pitch: (panoY / (panoHeight / 2) * 90)
+        };
     }
 
     /**
@@ -188,9 +367,9 @@ $(function() {
         // Sanity check: it doesn't make sense to scale the vector in a negative
         // direction. In fact, it should even be t >= 1.0 since the image plane
         // is always outside the pano sphere (except at the viewport center)
-        if (t < 0.0) {
-            return null;
-        }
+            // if (t < 0.0) {
+            //     return null;
+            // }
 
         // (tx, ty, tz) are the coordinates of the intersection point between a
         // line through camera and target with the image plane
@@ -267,11 +446,12 @@ $(function() {
         $('.pano-image-marker').css({'margin-left': x, 'margin-top': -y});
         // $('.pano-image-marker').css({'margin-left': p.left, 'margin-top': p.top});
     }
+    //
+    // setTimeout(function() {
+    //     $('.dummy-image').attr('src', $('.abcd').attr('src'));
+    // }, 1000);
 
-    setTimeout(function() {
-        $('.dummy-image').attr('src', $('.abcd').attr('src'));
-    }, 1000);
-
+    // Not relevant for now.
     function takeAndSaveScreenshot() {
 
         $('.status-indicator').text('Detecting...');
@@ -339,6 +519,7 @@ $(function() {
         $('.label-toolbar-overlay-container').show();
     }
 
+    // Places the labels in the GSV window.
     function placeLabel(e, labelType) {
         const x = e.clientX - $panorama.offset().left;
         const y = e.clientY - $panorama.offset().top;
@@ -363,25 +544,50 @@ $(function() {
         $('.panorama-container').append($marker);
     }
 
+    // This function moves 'markers' and 'object boundaries' when the pano is moved.
     function moveMarkers() {
 
-        $('.marker').each(function() {
+        const pov = panorama.getPov();
+        const photographerPov = panorama.getPhotographerPov();
+
+        // Markers are elements placed by 'labelling'. Not relevant for now.
+        $('.marker:not(.template)').each(function() {
 
             const $marker = $(this);
             const position = getPosition(parseInt($marker.attr('data-x')), parseInt($marker.attr('data-y')), $panorama.width(), $panorama.height(), 1, lastPov.heading, lastPov.pitch);
             const newCoords = povToPixel3d(position, panorama.getPov(), 1, $panorama.width(), $panorama.height());
             $marker.css({'left': newCoords.left, 'top': newCoords.top});
         });
-        //
-        // $('.object-boundary').each(function() {
-        //     const $boundary = $(this);
-        //     const position  = getPosition(parseFloat($boundary.attr('data-x')), parseFloat($boundary.attr('data-y')), $panorama.width(), $panorama.height(), 1, lastPov.heading, lastPov.pitch);
-        //     const newCoords = povToPixel3d(position, panorama.getPov(), 1, $panorama.width(), $panorama.height());
-        //     $boundary.css({'left': newCoords.left, 'top': newCoords.top});
-        // });
-    }
 
-    // Utility functions
+        // .object-boundary is the element that is used to draw the boundary of the object in the GSV pano.
+        // It needs to be moved when the pano is moved.
+        $('.object-boundary:not(.template)').each(function() {
+            const $boundary = $(this);
+
+            // Ignore the commented lines
+            // const position  = getPosition(parseFloat($boundary.attr('data-x')), parseFloat($boundary.attr('data-y')), $panorama.width(), $panorama.height(), 1, lastPov.heading, lastPov.pitch);
+            // const newCoords = povToPixel3d(position, panorama.getPov(), 1, $panorama.width(), $panorama.height());
+            // const position = calculatePovFromPanoXY(parseFloat($boundary.attr('data-x')), parseFloat($boundary.attr('data-y')), $panorama.width(), $panorama.height());
+
+            // Get the original heading and pitch information from the attributes of the object.
+            const position = {
+                heading: parseFloat($boundary.attr('data-heading')),
+                pitch: parseFloat($boundary.attr('data-pitch')),
+            }
+
+            // position.pitch += (pov.pitch - photographerPov.pitch) * Math.abs((pov.heading/180));
+
+            // This function is not behaving exactly like the povToPixel3d function. So for now I am using the old one.
+            // const newCoords = povToPixel3DOffset(position, panorama.getPov(), $panorama.width(), $panorama.height());
+
+            // Get the coordinates based on the position.
+            const newCoords = povToPixel3d(position, pov, 1, $panorama.width(), $panorama.height());
+
+            // Move the boundary to the new coordinates.
+            // Subtract 15 as the element is 30x30 pixels.
+            $boundary.css({'left': newCoords.left - markerOffset, 'top': newCoords.top - markerOffset});
+        });
+    }
 
     worker.addEventListener('message', (event) => {
 
@@ -494,7 +700,12 @@ $(function() {
 
         $('.save-image').click(takeAndSaveScreenshot);
 
-        $('.dummy-image').on('load', analyzeImage);
+        // $('.dummy-image').on('load', analyzeImage);
+
+        // $('.abcd').on('load', function() {
+        //     renderBoxes(processBoxData(preprocessedData['47.6593773,-122.3119228']));
+        //     areBoxesDrawn = false;
+        // });
 
         $(document).on('keypress', function(e) {
             if (e.key == 'r') {
@@ -507,9 +718,9 @@ $(function() {
         });
 
         $(document).on('mousedown', function () {
-            if (!lastPov) {
-                lastPov = panorama.getPov();
-            }
+            // if (!lastPov) {
+            //     lastPov = panorama.getPov();
+            // }
             isMouseDown = true;
         })
 
@@ -517,6 +728,9 @@ $(function() {
             isMouseDown = false;
 
             if ($(e.target).hasClass('widget-scene-canvas')) {
+                if (!lastPov) {
+                    lastPov = panorama.getPov();
+                }
                 takeAndSaveScreenshot();
             }
         })
@@ -539,22 +753,159 @@ $(function() {
 
     let prevZoom = 1;
 
-    panorama.addListener('pov_changed', function () {
-        const newZoom = panorama.getPov().zoom;
-        if (Number.isInteger(newZoom) && prevZoom !== panorama.getPov().zoom) {
-            prevZoom = panorama.getPov().zoom;
-            setTimeout(takeAndSaveScreenshot, 20);
-        }
-    });
+    try {
+        panorama.addListener('pov_changed', function () {
+            const newZoom = panorama.getPov().zoom;
+            if (Number.isInteger(newZoom) && prevZoom !== panorama.getPov().zoom) {
+                prevZoom = panorama.getPov().zoom;
+                setTimeout(takeAndSaveScreenshot, 20);
+            }
+        });
+
+    } catch (e) {
+        console.log(e);
+        // alert("Reload the page.");
+    }
 
     const inputShape = [1, 3, 640, 640];
     const topk = 100;
     const iouThreshold = 0.45;
     const scoreThreshold = 0.2;
 
+
+    function getHeadingAndPitch(width, height, x, y) {
+        // Convert pixel coordinates to normalized device coordinates (-1 to 1)
+        const nx = (x / width) * 2 - 1;
+        const ny = (y / height) * 2 - 1;
+
+        // Calculate the distance from the center of the sphere (assuming a radius of 1)
+        const r = Math.sqrt(nx * nx + ny * ny);
+
+        // Calculate the pitch and heading angles
+        const pitch = Math.atan2(ny, -r);
+        const heading = Math.atan2(nx, -r);
+
+        // Convert radians to degrees
+        const pitchDeg = (pitch * 180 / Math.PI) % 180;
+        const headingDeg = (heading * 180 / Math.PI) % 180;
+
+        return { heading: headingDeg, pitch: 0 };
+    }
+
+    function processBoxData(data) {
+
+        // const [modelWidth, modelHeight] = inputShape.slice(2);
+        // const [input, xRatio, yRatio] = preprocessing($('.abcd')[0], modelWidth, modelHeight);
+
+        // const xRatio = 8192/8192;
+        // const yRatio = 4/4096;
+
+        const result = [];
+
+        const boxesString = data.split('\n');
+        for (let i = 0; i < boxesString.length; i++) {
+
+            if (boxesString[i].length < 1) continue;
+
+            const box = {};
+            const tokens = boxesString[i].split(' ');
+            box.label = tokens[0];
+            box.probability = tokens[5];
+
+            const boxString = [tokens[1], tokens[2], tokens[3], tokens[4]];
+
+            const [x, y, w, h] = [
+                parseFloat(tokens[1]),
+                parseFloat(tokens[2]),
+                parseFloat(tokens[3]) * panoImageScale,
+                parseFloat(tokens[4]) * panoImageScale
+            ]; // keep boxes in maxSize range
+
+            box.bounding = [x, y, w, h];
+
+            result.push(box);
+        }
+
+        return result;
+    }
+
+    function getPOVFromFullPanoCoords(left, top) {
+
+        const result = {
+            heading: 0,
+            pitch: 0
+        };
+
+        const $panoFullWidth = $('.pano-full-width');
+        const fullPanoMidpointX = panoImageWidth / 2;
+        const fullPanoMidpointY = panoImageHeight / 2;
+        const deltaX = left - fullPanoMidpointX;
+        const deltaY = top - fullPanoMidpointY;
+
+        let h = 0
+        if (deltaX < 0) {
+            h = (left * (360/panoImageWidth));
+            h += 180;
+        } else {
+            h = (deltaX * (360/panoImageWidth));
+        }
+        result.heading = h;
+
+        let p = 0
+        if (deltaY < 0) {
+            p = (top * (180/panoImageHeight));
+            p += 90;
+        } else {
+            p = (deltaY * (180/panoImageHeight));
+        }
+
+        result.pitch = p * -1;
+
+        return result;
+
+    }
+
+    function getHeadingAndPitch2(width, height, x, y) {
+        // Convert pixel coordinates to normalized device coordinates (-1 to 1)
+        const nx = (x / width) * 2 - 1;
+        const ny = 1 - (y / height) * 2; // Flip the y-coordinate
+
+        // Calculate the distance from the center of the sphere
+        const r = Math.sqrt(nx * nx + ny * ny);
+
+        // Calculate the heading angle
+        let heading = Math.atan2(nx, ny);
+
+        // Convert the heading angle to a positive value
+        if (heading < 0) {
+            heading = 2 * Math.PI + heading;
+        }
+
+        // Calculate the pitch angle
+        const pitch = Math.atan2(-r, Math.sqrt(nx * nx + ny * ny));
+
+        // Convert radians to degrees
+        const pitchDeg = (pitch * 180) / Math.PI;
+        const headingDeg = (heading * 180) / Math.PI;
+
+        return { heading: headingDeg, pitch: pitchDeg };
+    }
+
+
+    function toRadians (angle) {
+        return angle * (Math.PI / 180);
+    }
+
+
     function renderBoxes(boxes) {
 
-        $('.object-boundary:not(.template)').remove();
+        // $('.object-boundary:not(.template)').remove();
+
+        const pov = panorama.getPov();
+
+        const panoFullWidthPosition = $('.pano-full-width').position();
+
+        const photographerPOV = panorama.getPhotographerPov();
 
         for (let i = 0; i < boxes.length; i++) {
             const box = boxes[i];
@@ -563,22 +914,89 @@ $(function() {
             const probability = box.probability;
 
             const $b = $('.object-boundary.template').clone().removeClass('template').addClass('object-' + i);
+
+            const scaledX = x; // + (w/2); // * GSVScaleX;
+            const scaledY = y; // + (h/2); // * GSVScaleY;
+
+            // const position  = getPosition(parseFloat($boundary.attr('data-x')), parseFloat($boundary.attr('data-y')), $panorama.width(), $panorama.height(), 1, lastPov.heading, lastPov.pitch);
+            // const newCoords = povToPixel3d(position, panorama.getPov(), 1, $panorama.width(), $panorama.height());
+
+            // const position = getPosition(scaledX, scaledY, $panorama.width(), $panorama.height(), 1, pov.heading, pov.pitch);
+            // var newCoords = povToPixel3d(position, pov, 1, $panorama.width(), $panorama.height());
+
+            // const position = calculatePovFromPanoXY(scaledX, scaledY, $panorama.width(), $panorama.height());
+            // const position = {
+            //     heading: 247.5,
+            //     pitch: 0
+            // }
+
+            // const position = getHeadingAndPitch(panoImageWidth, panoImageHeight, scaledX, scaledY);
+            // const position = getHeadingAndPitch2(panoImageWidth, panoImageHeight, scaledX, scaledY);
+            const position = getPOVFromFullPanoCoords(scaledX, scaledY);
+
+            // const position = convertXYtoYawPitch(scaledX/panoImageWidth, scaledY/panoImageHeight);
+
+            position.heading += photographerPOV.heading;
+            // position.pitch -= (photographerPOV.pitch);
+            // position.pitch += (Math.abs(position.heading - pov.heading) /180) * pov.pitch;
+
+            const nx = (x / panoImageWidth) * 2 - 1;
+            position.pitch -= Math.cos(toRadians(position.heading)) * photographerPOV.pitch;
+            // position.pitch -= (((position.heading - 90) / 90)) * photographerPOV.pitch;
+
+
+            const newCoords = povToPixel3d(position, pov, 1, $panorama.width(), $panorama.height());
+            // const newCoords = povToPixel3DOffset(position, pov, $panorama.width(), $panorama.height());
+
+            if (newCoords == null) {
+                console.log('New coords null for: ' + scaledX + ', ' + scaledY);
+                continue;
+            }
+
+            // $b.css({
+            //     top: newCoords.top + ((h * GSVScaleY)/2) - 15,
+            //     left: newCoords.left + ((w * GSVScaleX)/2) - 15,
+            //     width: 30,
+            //     height: 30,
+            // });
+
             $b.css({
-                top: y * GSVScaleY,
-                left: x * GSVScaleX,
-                width: w * GSVScaleX,
-                height: h * GSVScaleY,
+                top: newCoords.top - markerOffset,
+                left: newCoords.left - markerOffset,
+                width: markerSize,
+                height: markerSize,
             });
+
             $b.addClass('label-' + label);
-            $b.attr('data-x', (x * GSVScaleX));
-            $b.attr('data-y', (x * GSVScaleY));
+            $b.attr('data-x', scaledX);
+            $b.attr('data-y', scaledY);
+            $b.attr('data-heading', position.heading);
+            $b.attr('data-pitch', position.pitch);
+
 
             $('.panorama-container').append($b);
+
+            // const $bClone = $b.clone();
+            // $bClone.css({'left': x, 'top': y});
+            //
+            // $('.pano-full-width').append($bClone);
+
+            // $bClone.css({'left': newCoords.left + panoFullWidthPosition.left, 'top': newCoords.top + panoFullWidthPosition.top, 'border-color': 'black'});
+            // $bClone.attr('data-x', newCoords.left + panoFullWidthPosition.left);
+            // $bClone.attr('data-y', newCoords.top + panoFullWidthPosition.top);
+            //
+            // $bClone.addClass('in-pano-container');
+            //
+            // $('.panorama-container').append($bClone);
 
             $('.object-boundary-label-text', $b).text(LABEL_TYPES[label]);
         }
 
-        // areBoxesDrawn = true;
+        areBoxesDrawn = true;
+
+        if (!lastPov) {
+            lastPov = panorama.getPov();
+        }
 
     }
 
@@ -638,6 +1056,7 @@ $(function() {
         return [input, xRatio, yRatio];
     };
 
+    // This function analyzes image in runtime. Disabled for now.
     async function analyzeImage() {
 
         if (areBoxesDrawn)
@@ -646,13 +1065,6 @@ $(function() {
         startTime = new Date().getTime();
 
         const image = $('.dummy-image')[0];
-
-        // let obj = new Image();
-        // obj.src = image.src;
-        //
-        // worker.postMessage({
-        //     image: obj
-        // });
 
         const [modelWidth, modelHeight] = inputShape.slice(2);
         const [input, xRatio, yRatio] = preprocessing(image, modelWidth, modelHeight);
@@ -703,6 +1115,12 @@ $(function() {
     }
 
     setupEventHandlers();
-    loadModels();
+    // loadModels();
+
+
+    // In a timeout to allow the panorama to load
+    setTimeout(function() {
+        renderBoxes(processBoxData(preprocessedData['47.6593773,-122.3119228']));
+    }, 5000);
 });
 
