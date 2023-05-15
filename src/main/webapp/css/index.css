@@ -10,10 +10,10 @@ body {
     /*height: 100vh;*/
     /*width: 70%;*/
     transition: all 0.1s;
-    /*overflow: hidden;*/
+    overflow: hidden;
 
-    width: 800px;
-    height: 400px;
+    width: 1000px;
+    height: 700px;
 }
 
 #panorama { height: 100%; width: 100%; z-index: 10; }
@@ -94,15 +94,15 @@ body {
 
 .template { display: none; }
 
-.status-indicator { position: absolute; text-align: center; left: 0; width: calc(70% - 200px); top: 20px; font-weight: bold; color: crimson; font-family: Avenir; z-index: 2; background: white; padding: 5px; border-radius: 5px; margin: 0 100px; }
+.status-indicator { display: none; position: absolute; text-align: center; left: 0; width: calc(70% - 200px); top: 20px; font-weight: bold; color: crimson; font-family: Avenir; z-index: 2; background: white; padding: 5px; border-radius: 5px; margin: 0 100px; }
 
 /*.box { position: absolute; background: rgba(255, 200, 0, 0.15); z-index: 1; }*/
 /*.box.bench { background: rgba(220, 20, 60, 0.35); border: 2px solid crimson; }*/
 
 .object-boundary { z-index: 10; position: absolute; pointer-events: none; border-radius: 50%; }
 
-.object-boundary-correct, .object-boundary-incorrect { display: flex; margin: 3px; }
-.object-boundary-label { width: 150px; pointer-events: all; display: flex; position: absolute; top: -60px; }
+.object-boundary-correct, .object-boundary-incorrect { display: none; margin: 3px; }
+.object-boundary-label { width: 150px; pointer-events: all; display: flex; position: absolute; top: -35px; }
 .object-boundary-label-text { display: flex; }
 .object-boundary.label-0 { border: 2px solid gold; background: rgba(255, 215, 0, 0.2); }
 .object-boundary.label-1 { border: 2px solid crimson; background: rgba(220, 20, 60, 0.2); }

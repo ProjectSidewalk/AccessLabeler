@@ -203,10 +203,6 @@
                 alert("changing pov");
                 panorama.setPov(panorama.getPhotographerPov());
             });
-
-        // panorama.addListener("pov_changed", () => {
-        //     $('.object-boundary:not(.template)').remove();
-        // });
     }
 </script>
 <script async defer

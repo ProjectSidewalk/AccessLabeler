@@ -1,16 +1,55 @@
+
+
+const panoImageHeight = 4096;
+const panoImageWidth = 8192;
+
 function get(name){
     if(name=(new RegExp('[?&]'+encodeURIComponent(name)+'=([^&]*)')).exec(location.search))
         return decodeURIComponent(name[1]);
 }
 
+function getPOVFromFullPanoCoords(x, y) {
+
+    const result = {
+        heading: 0,
+        pitch: 0
+    };
+
+    const fullPanoMidpointX = panoImageWidth / 2;
+    const fullPanoMidpointY = panoImageHeight / 2;
+    const deltaX = x - fullPanoMidpointX;
+    const deltaY = y - fullPanoMidpointY;
+
+    let h = 0
+    if (deltaX < 0) {
+        h = (x * (360/panoImageWidth));
+        h += 180;
+    } else {
+        h = (deltaX * (360/panoImageWidth));
+    }
+    result.heading = h;
+
+    let p = 0
+    if (deltaY < 0) {
+        p = (y * (180/panoImageHeight));
+        p += 90;
+    } else {
+        p = (deltaY * (180/panoImageHeight));
+    }
+
+    result.pitch = p * -1;
+
+    return result;
+}
+
 const preprocessedData = {
     "47.6445637,-122.1338495": "1 0.844832 0.528247 0.0409932 0.0779043 0.905118",
-    "47.6617177,-122.3119481": "1 0.704584 0.557155 0.0937297 0.162071 0.971062\n" +
-        "2 0.625372 0.47812 0.0085063 0.0308385 0.935331\n" +
-        "0 0.704038 0.60406 0.0334666 0.0338287 0.881437\n" +
-        "1 0.110114 0.512956 0.014253 0.0334913 0.874534\n" +
-        "1 0.774341 0.553502 0.0763234 0.15143 0.700532\n" +
-        "2 0.017272 0.492008 0.00255307 0.0203148 0.44772",
+    "47.6617177,-122.3119481": "1 5769.1836 2283.8171 768.1143 667.5220 0.9747\n" +
+        "2 5123.0933 1958.5879 69.8496 127.4517 0.9494\n" +
+        "1 902.0477 2101.1250 118.0098 137.8979 0.8822\n" +
+        "0 5768.4580 2474.3267 272.8262 138.3994 0.8737\n" +
+        "1 6357.7852 2266.2031 617.5430 620.4503 0.6380\n" +
+        "2 141.4554 2015.0417 20.9424 83.1118 0.5460",
     "47.6614376,-122.311893": "1 0.314481 0.52349 0.0318004 0.0521871 0.942006\n" +
         "2 0.566586 0.473667 0.00286376 0.0110221 0.26537",
     "47.6612187,-122.309051": "2 0.892311 0.474349 0.00912595 0.0317016 0.973872\n" +
@@ -36,12 +75,6 @@ const preprocessedData = {
     // "47.6593773,-122.3119228": "1 2048 2048 100 100 1"
 }
 
-function convertXYtoYawPitch(xPercentage, yPercentage) {
-    const yaw = xPercentage * 360;
-    const pitch = (yPercentage - 0.5) * -180;
-    return {heading: yaw, pitch: pitch};
-}
-
 $(function() {
     let isMouseDown = false;
 
@@ -62,13 +95,12 @@ $(function() {
 
     const $panoContainer = $('.panorama-container');
 
-    const panoImageHeight = 4096;
-    const panoImageWidth = 8192;
-
     const panoImageScale = ($panoContainer.height()/panoImageHeight);
 
     const markerOffset = 5;
     const markerSize = 10;
+
+    const conf_threshold = 0;
 
 
     const LABEL_TYPES = {
@@ -78,12 +110,6 @@ $(function() {
     }
 
     let areBoxesDrawn = false;
-
-    const dummyBox = {
-        bounding: [60.79486846923828, 222.09311096191405, 152.9200897216797, 89.72289733886718],
-        label: 1,
-        probability: 0.9720821380615234
-    }
 
     /**
      * Calculates heading and pitch for a Google Maps marker using (x, y) coordinates
@@ -367,9 +393,9 @@ $(function() {
         // Sanity check: it doesn't make sense to scale the vector in a negative
         // direction. In fact, it should even be t >= 1.0 since the image plane
         // is always outside the pano sphere (except at the viewport center)
-            // if (t < 0.0) {
-            //     return null;
-            // }
+        if (t < 0.0) {
+            return null;
+        }
 
         // (tx, ty, tz) are the coordinates of the intersection point between a
         // line through camera and target with the image plane
@@ -564,18 +590,12 @@ $(function() {
         $('.object-boundary:not(.template)').each(function() {
             const $boundary = $(this);
 
-            // Ignore the commented lines
-            // const position  = getPosition(parseFloat($boundary.attr('data-x')), parseFloat($boundary.attr('data-y')), $panorama.width(), $panorama.height(), 1, lastPov.heading, lastPov.pitch);
-            // const newCoords = povToPixel3d(position, panorama.getPov(), 1, $panorama.width(), $panorama.height());
-            // const position = calculatePovFromPanoXY(parseFloat($boundary.attr('data-x')), parseFloat($boundary.attr('data-y')), $panorama.width(), $panorama.height());
 
             // Get the original heading and pitch information from the attributes of the object.
             const position = {
                 heading: parseFloat($boundary.attr('data-heading')),
                 pitch: parseFloat($boundary.attr('data-pitch')),
             }
-
-            // position.pitch += (pov.pitch - photographerPov.pitch) * Math.abs((pov.heading/180));
 
             // This function is not behaving exactly like the povToPixel3d function. So for now I am using the old one.
             // const newCoords = povToPixel3DOffset(position, panorama.getPov(), $panorama.width(), $panorama.height());
@@ -773,32 +793,7 @@ $(function() {
     const scoreThreshold = 0.2;
 
 
-    function getHeadingAndPitch(width, height, x, y) {
-        // Convert pixel coordinates to normalized device coordinates (-1 to 1)
-        const nx = (x / width) * 2 - 1;
-        const ny = (y / height) * 2 - 1;
-
-        // Calculate the distance from the center of the sphere (assuming a radius of 1)
-        const r = Math.sqrt(nx * nx + ny * ny);
-
-        // Calculate the pitch and heading angles
-        const pitch = Math.atan2(ny, -r);
-        const heading = Math.atan2(nx, -r);
-
-        // Convert radians to degrees
-        const pitchDeg = (pitch * 180 / Math.PI) % 180;
-        const headingDeg = (heading * 180 / Math.PI) % 180;
-
-        return { heading: headingDeg, pitch: 0 };
-    }
-
     function processBoxData(data) {
-
-        // const [modelWidth, modelHeight] = inputShape.slice(2);
-        // const [input, xRatio, yRatio] = preprocessing($('.abcd')[0], modelWidth, modelHeight);
-
-        // const xRatio = 8192/8192;
-        // const yRatio = 4/4096;
 
         const result = [];
 
@@ -827,42 +822,6 @@ $(function() {
         }
 
         return result;
-    }
-
-    function getPOVFromFullPanoCoords(left, top) {
-
-        const result = {
-            heading: 0,
-            pitch: 0
-        };
-
-        const $panoFullWidth = $('.pano-full-width');
-        const fullPanoMidpointX = panoImageWidth / 2;
-        const fullPanoMidpointY = panoImageHeight / 2;
-        const deltaX = left - fullPanoMidpointX;
-        const deltaY = top - fullPanoMidpointY;
-
-        let h = 0
-        if (deltaX < 0) {
-            h = (left * (360/panoImageWidth));
-            h += 180;
-        } else {
-            h = (deltaX * (360/panoImageWidth));
-        }
-        result.heading = h;
-
-        let p = 0
-        if (deltaY < 0) {
-            p = (top * (180/panoImageHeight));
-            p += 90;
-        } else {
-            p = (deltaY * (180/panoImageHeight));
-        }
-
-        result.pitch = p * -1;
-
-        return result;
-
     }
 
     function getHeadingAndPitch2(width, height, x, y) {
@@ -897,15 +856,21 @@ $(function() {
     }
 
 
+    function movePano(pov) {
+        panorama.setPov(pov);
+
+        moveMarkers();
+
+    }
+
+
     function renderBoxes(boxes) {
 
-        // $('.object-boundary:not(.template)').remove();
-
         const pov = panorama.getPov();
-
-        const panoFullWidthPosition = $('.pano-full-width').position();
-
         const photographerPOV = panorama.getPhotographerPov();
+
+        let initPOV = pov;
+        let highestProbability = 0;
 
         for (let i = 0; i < boxes.length; i++) {
             const box = boxes[i];
@@ -913,34 +878,19 @@ $(function() {
             const label = box.label;
             const probability = box.probability;
 
+            // Show the label only if above threshold.
+            if (probability < conf_threshold) continue;
+
+
             const $b = $('.object-boundary.template').clone().removeClass('template').addClass('object-' + i);
 
-            const scaledX = x; // + (w/2); // * GSVScaleX;
-            const scaledY = y; // + (h/2); // * GSVScaleY;
+            const scaledX = x;
+            const scaledY = y;
 
-            // const position  = getPosition(parseFloat($boundary.attr('data-x')), parseFloat($boundary.attr('data-y')), $panorama.width(), $panorama.height(), 1, lastPov.heading, lastPov.pitch);
-            // const newCoords = povToPixel3d(position, panorama.getPov(), 1, $panorama.width(), $panorama.height());
-
-            // const position = getPosition(scaledX, scaledY, $panorama.width(), $panorama.height(), 1, pov.heading, pov.pitch);
-            // var newCoords = povToPixel3d(position, pov, 1, $panorama.width(), $panorama.height());
-
-            // const position = calculatePovFromPanoXY(scaledX, scaledY, $panorama.width(), $panorama.height());
-            // const position = {
-            //     heading: 247.5,
-            //     pitch: 0
-            // }
-
-            // const position = getHeadingAndPitch(panoImageWidth, panoImageHeight, scaledX, scaledY);
-            // const position = getHeadingAndPitch2(panoImageWidth, panoImageHeight, scaledX, scaledY);
             const position = getPOVFromFullPanoCoords(scaledX, scaledY);
 
-            // const position = convertXYtoYawPitch(scaledX/panoImageWidth, scaledY/panoImageHeight);
-
             position.heading += photographerPOV.heading;
-            // position.pitch -= (photographerPOV.pitch);
-            // position.pitch += (Math.abs(position.heading - pov.heading) /180) * pov.pitch;
 
-            const nx = (x / panoImageWidth) * 2 - 1;
             position.pitch -= Math.cos(toRadians(position.heading)) * photographerPOV.pitch;
             // position.pitch -= (((position.heading - 90) / 90)) * photographerPOV.pitch;
 
@@ -952,13 +902,6 @@ $(function() {
                 console.log('New coords null for: ' + scaledX + ', ' + scaledY);
                 continue;
             }
-
-            // $b.css({
-            //     top: newCoords.top + ((h * GSVScaleY)/2) - 15,
-            //     left: newCoords.left + ((w * GSVScaleX)/2) - 15,
-            //     width: 30,
-            //     height: 30,
-            // });
 
             $b.css({
                 top: newCoords.top - markerOffset,
@@ -975,6 +918,11 @@ $(function() {
 
 
             $('.panorama-container').append($b);
+
+            if (probability > highestProbability) {
+                initPOV = position;
+                highestProbability = probability;
+            }
 
             // const $bClone = $b.clone();
             // $bClone.css({'left': x, 'top': y});
@@ -998,63 +946,10 @@ $(function() {
             lastPov = panorama.getPov();
         }
 
+        movePano(initPOV);
+
     }
 
-    let session = null;
-    let nms = null;
-
-    async function loadModels() {
-        try {
-            // create a new session and load the specific model.
-            //
-            // the model in this example contains a single MatMul node
-            // it has 2 inputs: 'a'(float32, 3x4) and 'b'(float32, 4x3)
-            // it has 1 output: 'c'(float32, 3x3)
-            session = await ort.InferenceSession.create('./models/attempt-2.onnx');
-            nms = await ort.InferenceSession.create('./models/nms-yolov8.onnx');
-
-        } catch (e) {
-            console.log(e);
-        }
-    }
-
-    /**
-     * Preprocessing image
-     * @param {HTMLImageElement} source image source
-     * @param {Number} modelWidth model input width
-     * @param {Number} modelHeight model input height
-     * @return preprocessed image and configs
-     */
-    const preprocessing = (source, modelWidth, modelHeight) => {
-        const mat = cv.imread(source); // read from img tag
-        const matC3 = new cv.Mat(mat.rows, mat.cols, cv.CV_8UC3); // new image matrix
-        cv.cvtColor(mat, matC3, cv.COLOR_RGBA2BGR); // RGBA to BGR
-
-        // padding image to [n x n] dim
-        const maxSize = Math.max(matC3.rows, matC3.cols); // get max size from width and height
-        const xPad = maxSize - matC3.cols, // set xPadding
-            xRatio = maxSize / matC3.cols; // set xRatio
-        const yPad = maxSize - matC3.rows, // set yPadding
-            yRatio = maxSize / matC3.rows; // set yRatio
-        const matPad = new cv.Mat(); // new mat for padded image
-        cv.copyMakeBorder(matC3, matPad, 0, yPad, 0, xPad, cv.BORDER_CONSTANT); // padding black
-
-        const input = cv.blobFromImage(
-            matPad,
-            1 / 255.0, // normalize
-            new cv.Size(modelWidth, modelHeight), // resize to model input size
-            new cv.Scalar(0, 0, 0),
-            true, // swapRB
-            false // crop
-        ); // preprocessing image matrix
-
-        // release mat opencv
-        mat.delete();
-        matC3.delete();
-        matPad.delete();
-
-        return [input, xRatio, yRatio];
-    };
 
     // This function analyzes image in runtime. Disabled for now.
     async function analyzeImage() {
@@ -1121,6 +1016,11 @@ $(function() {
     // In a timeout to allow the panorama to load
     setTimeout(function() {
         renderBoxes(processBoxData(preprocessedData['47.6593773,-122.3119228']));
-    }, 5000);
+    }, 3000);
+
+    google.maps.event.addListenerOnce(panorama, 'idle', function(){
+        console.log('loaded');
+    });
+
 });
 
