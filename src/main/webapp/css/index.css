@@ -13,7 +13,7 @@ body {
     overflow: hidden;
 
     width: 1000px;
-    height: 700px;
+    height: 500px;
 }
 
 #panorama { height: 100%; width: 100%; z-index: 10; }
@@ -103,7 +103,7 @@ body {
 
 .object-boundary-correct, .object-boundary-incorrect { display: none; margin: 3px; }
 .object-boundary-label { width: 150px; pointer-events: all; display: flex; position: absolute; top: -35px; }
-.object-boundary-label-text { display: flex; }
+.object-boundary-label-text { display: flex; width: 100px; }
 .object-boundary.label-0 { border: 2px solid gold; background: rgba(255, 215, 0, 0.2); }
 .object-boundary.label-1 { border: 2px solid crimson; background: rgba(220, 20, 60, 0.2); }
 .object-boundary.label-2 { border: 2px solid deepskyblue; background: rgba(0, 191, 255, 0.2); }
