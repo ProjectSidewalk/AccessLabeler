@@ -72,7 +72,7 @@ body {
 .screen-capture { position: absolute; bottom: 0; height: 50px; display: flex; align-content: center; justify-content: center; background: burlywood; width: 100%; padding: 10px; cursor: pointer; }
 
 
-.actions-toolbar-overlay-container, .label-toolbar-overlay-container { pointer-events: none; width: 70%; display: flex; justify-content: center; z-index: 2; height: 70px; position: absolute; bottom: 0; padding: 10px; border-top-left-radius: 10px; border-top-right-radius: 10px; }
+.actions-toolbar-overlay-container, .label-toolbar-overlay-container { pointer-events: none; width: 70%; display: flex; justify-content: center; z-index: 2; height: 70px; position: absolute; top: 30px; padding: 10px; border-top-left-radius: 10px; border-top-right-radius: 10px; }
 .actions-toolbar-overlay { width: fit-content; background: white; padding: 10px; position: absolute; height: 100%; pointer-events: all; }
 .label-toolbar-overlay-container { width: 750px; }
 .actions-toolbar, .label-toolbar { display: flex; }
@@ -91,7 +91,7 @@ body {
 
 .template { display: none; }
 
-.status-indicator { position: absolute; text-align: center; left: 0; width: calc(70% - 200px); top: 20px; font-weight: bold; color: crimson; font-family: Avenir; z-index: 2; background: white; padding: 5px; border-radius: 5px; margin: 0 100px; }
+.status-indicator { position: absolute; text-align: center; left: 50%; width: calc(40%); bottom: 20px; font-weight: bold; color: crimson; font-family: Avenir; z-index: 2; background: white; padding: 5px; border-radius: 5px; margin: 0; transform: translateX(-50%); }
 
 /*.box { position: absolute; background: rgba(255, 200, 0, 0.15); z-index: 1; }*/
 /*.box.bench { background: rgba(220, 20, 60, 0.35); border: 2px solid crimson; }*/

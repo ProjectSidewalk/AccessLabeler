@@ -20,7 +20,7 @@
 </head>
 <body style="margin: 0;">
 
-<div class="status-indicator">Move the pano to start detecting</div>
+
 <div class="panorama-container">
     <div class="object-boundary template">
         <div class="object-boundary-label">
@@ -35,6 +35,8 @@
     <div class="mode-indicator"></div>
     <div class="pano-mid-x"></div>
     <div class="pano-mid-y"></div>
+
+    <div class="status-indicator">Move the pano to start detecting</div>
 </div>
 
 <div class="dummy-image-container" style="position: absolute; overflow: hidden; pointer-events: none; z-index: -1;">
