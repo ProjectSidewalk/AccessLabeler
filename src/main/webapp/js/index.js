@@ -2,6 +2,15 @@ function get(name){
     if(name=(new RegExp('[?&]'+encodeURIComponent(name)+'=([^&]*)')).exec(location.search))
         return decodeURIComponent(name[1]);
 }
+class Marker {
+    constructor(id, type, heading, pitch, text) {
+        this.id = id;
+        this.type = type;
+        this.heading = heading;
+        this.pitch = pitch;
+        this.text = text;
+    }
+}
 $(function() {
     let isMouseDown = false;
 
@@ -34,6 +43,22 @@ $(function() {
         bounding: [60.79486846923828, 222.09311096191405, 152.9200897216797, 89.72289733886718],
         label: 1,
         probability: 0.9720821380615234
+    }
+
+    const markers = [];
+
+    let markerID = 0;
+
+
+    let nLabelsTotal = 0;
+    let nLabelsCorrect = 0;
+    let nLabelsIncorrect = 0;
+
+
+    function updateStats() {
+        $('.n-labels-correct-count').text(nLabelsCorrect);
+        $('.n-labels-incorrect-count').text(nLabelsIncorrect);
+        $('.n-labels-total-count').text(nLabelsTotal);
     }
 
     /**
@@ -336,6 +361,24 @@ $(function() {
     }
 
     function showLabels() {
+
+        function renderLabels(labels) {
+
+            const $labelToolbar = $('.label-toolbar');
+
+            $('.label-toolbar-item.place-label:not(.template)').remove();
+
+            for (let i = 0; i < labels.length; i++) {
+                const label = labels[i];
+                const $labelButton = $('.label-toolbar-item.place-label.template').clone().removeClass('template');
+                $labelButton.attr('data-label-type', label.type);
+                $labelButton.addClass(label.type);
+                $('.label-toolbar-item-text', $labelButton).text(label.displayName);
+                $labelToolbar.append($labelButton);
+            }
+        }
+
+        renderLabels(LabelsDescriptor.labels);
         $('.label-toolbar-overlay-container').show();
     }
 
@@ -361,6 +404,12 @@ $(function() {
         $marker.addClass('marker-' + labelType);
 
         $('.panorama-container').append($marker);
+
+        const m = new Marker(markerID, labelType, pov.heading, pov.pitch);
+        markers.push(m);
+
+        $('.stop-labeling').click(); // Automatically stop labeling after placing a label
+
     }
 
     function moveMarkers() {
@@ -391,6 +440,10 @@ $(function() {
     });
 
     function setupEventHandlers() {
+
+        function onPanoClickEnded(e) {
+            takeAndSaveScreenshot();
+        }
 
         function postImageDataToWorker() {
 
@@ -430,7 +483,10 @@ $(function() {
             });
         }
 
-        function startLabelingHandler() {
+        function startLabelingHandler(e) {
+
+            e.preventDefault();
+            e.stopPropagation();
 
             const labelType = $(this).attr('data-label-type');
             currentLabelType = labelType;
@@ -452,6 +508,7 @@ $(function() {
         function placeLabelHandler() {
             $('.actions-toolbar-overlay-container').hide();
             showLabels();
+            $('.place-label').click(startLabelingHandler);
         }
 
         function getRandomInt(min, max) {
@@ -478,12 +535,51 @@ $(function() {
             console.log("Info: " + JSON.stringify(GIS_DATA.features[dataIDX]));
         }
 
+        function toggleSidebarHandler() {
+            const $sidebar = $('.sidebar');
+
+            const $dummyImageContainer = $('.dummy-image-container');
+            const $panoContainer = $('.panorama-container');
+
+            let sidebarRight = 0;
+            let panoWidth = '70%';
+
+
+            $sidebar.toggleClass('hide');
+            if ($sidebar.hasClass('hide')) {
+                sidebarRight = -$sidebar.width(); // 20px for the toggle button
+                panoWidth = 'calc(100% - 40px)';
+            }
+
+            $sidebar.css({'right': sidebarRight});
+            $panoContainer.css({'width': panoWidth});
+
+            $dummyImageContainer.css({'height': $panoContainer.height(), 'width': $panoContainer.width(), 'top': $panoContainer.position().top, 'left': $panoContainer.position().left});
+
+            // clear existing dummy markers as they might have moved
+            $('.dummy-marker:not(.template)').remove();
+        }
+
+        function confirmLabelHandler(e) {
+            nLabelsCorrect++;
+            nLabelsTotal++;
+            updateStats();
+
+            $(e.target).closest('.object-boundary').addClass('confirmed');
+        }
+
+        function denyLabelHandler(e) {
+            nLabelsIncorrect++;
+            nLabelsTotal++;
+            updateStats();
+
+            $(e.target).closest('.object-boundary').remove();
+        }
+
         $('.next-location').click(nextLocationHandler);
         $('.previous-location').click(previousLocationHandler);
 
         $('.show-labels-toolbar').on('click', placeLabelHandler);
-
-        $('.place-label').click(startLabelingHandler);
 
         $('.stop-labeling').click(stopLabelingHandler);
 
@@ -493,6 +589,14 @@ $(function() {
         });
 
         $('.save-image').click(takeAndSaveScreenshot);
+
+
+        $('.toggle-sidebar-button').click(toggleSidebarHandler);
+
+
+        $(document).on('click', '.object-boundary-correct', confirmLabelHandler);
+        $(document).on('click', '.object-boundary-incorrect', denyLabelHandler);
+
 
         $('.dummy-image').on('load', analyzeImage);
 
@@ -526,6 +630,8 @@ $(function() {
                 moveMarkers();
             }
         });
+
+        $('.widget-scene-canvas').on('mouseup', onPanoClickEnded);
 
         $('.panorama-container').on('click', function(e) {
 
@@ -695,7 +801,7 @@ $(function() {
         if (boxes.length === 0) {
             $('.status-indicator').text('No objects detected. Try moving the panorama or zooming in.');
         } else {
-            $('.status-indicator').text('Done!');
+            $('.status-indicator').text('Click on the tick and cross icons to verify the detected labels!');
         }
 
         endTime = new Date().getTime();
@@ -704,5 +810,10 @@ $(function() {
 
     setupEventHandlers();
     loadModels();
+
+    updateStats();
+
+    // Simulating a click right upon loading as we want to show the labeling interface by default.
+    $('.show-labels-toolbar').click();
 });
 
