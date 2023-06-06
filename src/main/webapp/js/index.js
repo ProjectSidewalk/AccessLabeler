@@ -299,7 +299,7 @@ $(function() {
 
     function takeAndSaveScreenshot() {
 
-        $('.status-indicator').text('Detecting...');
+        $('.status-indicator').text('Detecting...').show();
 
         const $dummyImageContainer = $('.dummy-image-container');
 
@@ -799,9 +799,9 @@ $(function() {
         renderBoxes(boxes); // Draw boxes
 
         if (boxes.length === 0) {
-            $('.status-indicator').text('No objects detected. Try moving the panorama or zooming in.');
+            $('.status-indicator').text('No objects detected. Try moving the panorama or zooming in.').show();
         } else {
-            $('.status-indicator').text('Click on the tick and cross icons to verify the detected labels!');
+            $('.status-indicator').hide();
         }
 
         endTime = new Date().getTime();

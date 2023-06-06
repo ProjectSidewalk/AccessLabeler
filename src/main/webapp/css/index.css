@@ -99,7 +99,7 @@ body {
 
 .template { display: none; }
 
-.status-indicator { position: absolute; text-align: center; left: 50%; width: calc(40%); bottom: 20px; font-weight: bold; color: #121212; font-family: Avenir, sans-serif; z-index: 2; background: white; padding: 5px; border-radius: 5px; margin: 0; transform: translateX(-50%); transition: all 0.5s; }
+.status-indicator { position: absolute; text-align: center; left: 50%; width: fit-content; padding: 10px; bottom: 20px; font-weight: bold; color: #121212; font-family: Avenir, sans-serif; z-index: 2; background: white; padding: 5px; border-radius: 5px; margin: 0; transform: translateX(-50%); transition: all 0.5s; }
 
 /*.box { position: absolute; background: rgba(255, 200, 0, 0.15); z-index: 1; }*/
 /*.box.bench { background: rgba(220, 20, 60, 0.35); border: 2px solid crimson; }*/
@@ -122,8 +122,8 @@ body {
 
 .object-boundary-label-icon { fill: white; }
 
-.object-boundary-correct .object-boundary-label-icon:hover { fill: lightgreen; }
-.object-boundary-incorrect .object-boundary-label-icon:hover { fill: lightsalmon; }
+.object-boundary-correct .object-boundary-label-icon:hover, .object-boundary.confirmed .object-boundary-correct .object-boundary-label-icon { fill: lightgreen; }
+.object-boundary-incorrect .object-boundary-label-icon:hover { fill: lightsalmon; } /* The label is removed if denied so no special directive for the icon needed. */
 
 .object-boundary.confirmed { outline-color: lightgreen; outline-style: solid; }
 
