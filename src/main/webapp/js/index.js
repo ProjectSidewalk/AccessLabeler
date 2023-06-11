@@ -7,10 +7,13 @@ class Marker {
      * @param type Type of the marker. Should be one of the types defined in the labelsDescriptor.js.
      * @param heading Heading of the marker. Should be between 0 and 360.
      * @param pitch Pitch of the marker. Should be between -90 and 90.
-     * @param x X coordinate of the marker in the GCV window.
-     * @param y Y coordinate of the marker in the GCV window.
+     * @param x X coordinate of the marker in the GSV window. This will not get updated as the GSV is panned.
+     * @param y Y coordinate of the marker in the GSV window. This will not get updated as the GSV is panned.
+     * @param left Left coordinate of the marker in the GSV window. This will get updated as the GSV is panned.
+     * @param top
+     * @param verificationState
      */
-    constructor(id, type, heading, pitch, x, y, left, right, verificationState) {
+    constructor(id, type, heading, pitch, x, y, left, top, verificationState) {
         this.id = id;
         this.type = type;
         this.heading = heading;
@@ -39,17 +42,21 @@ $(function() {
 
     let currentLabelType = null;
 
-    var $panorama = $('#panorama');
-
     let startTime = null;
     let endTime = null;
 
     let dataIDX = get('idx') ? get('idx') : 250;
 
-    const worker = new Worker('js/worker.js');
+    // const worker = new Worker('js/worker.js');
 
-    let GSVScaleX = $('.panorama-container').width()/640;
-    let GSVScaleY = $('.panorama-container').height()/640;
+    var $panorama = $('#panorama'); // TODO: Check if this is available from the start. What happens if it takes time to load?
+    const $dummyImageContainer = $('.dummy-image-container');
+    const $panoramaContainer = $('.panorama-container'); // This element is included in the HTML and should be available from the start.
+
+    let GSVScaleX = $panoramaContainer.width()/640;
+    let GSVScaleY = $panoramaContainer.height()/640;
+
+
 
 
     const MARKER_DISTANCE_BUFFER = 50;
@@ -68,10 +75,13 @@ $(function() {
     let markerID = 0;
 
 
+    // The single object to track all the stats related to labels in the current session.
     let labelStats = {};
     labelStats.nLabelsTotal = 0;
     labelStats.nLabelsCorrect = 0;
     labelStats.nLabelsIncorrect = 0;
+
+    labelStats.nLabelsManuallyPlaced = 0;
 
 
     let lastPov;
@@ -84,30 +94,15 @@ $(function() {
     }
 
     function calculateGSVScale() {
-        const $panoramaContainer = $('.panorama-container');
         GSVScaleX = $panoramaContainer.width()/640;
         GSVScaleY = $panoramaContainer.height()/640;
     }
 
-    function takeAndSaveScreenshot() {
+    function updateDummyImageFromGSV() {
 
         $('.status-indicator').text('Detecting...').show();
 
-        const $dummyImageContainer = $('.dummy-image-container');
-
-        const $panoContainer = $('.panorama-container');
-        $dummyImageContainer.css({'height': $panoContainer.height(), 'width': $panoContainer.width(), 'top': $panoContainer.position().top, 'left': $panoContainer.position().left});
-
-        // clear existing dummy markers as they might have moved
-        $('.dummy-marker:not(.template)').remove();
-
-        $('.marker:not(.template)').each(function() {
-            const $marker = $(this);
-            const $dummyMarker = $('.dummy-marker.template').clone().removeClass('template');
-            $dummyMarker.css({'top': $marker.position().top + $marker.height()/2, 'left': $marker.position().left + $marker.width()/2});
-            $dummyMarker.appendTo($dummyImageContainer);
-            $dummyMarker.addClass($marker.attr('class'));
-        });
+        $dummyImageContainer.css({'height': $panoramaContainer.height(), 'width': $panoramaContainer.width(), 'top': $panoramaContainer.position().top, 'left': $panoramaContainer.position().left});
 
         var webglImage = (function convertCanvasToImage(canvas) {
             var image = new Image();
@@ -116,31 +111,35 @@ $(function() {
         })($('.widget-scene-canvas')[0]);
 
         $('.dummy-image').attr('src', webglImage.src);
+    }
 
-        // html2canvas($dummyImageContainer[0]).then(canvas => {
-        //
-        //     const d = {
-        //         'name': 'label-' + new Date().getTime() +'.jpg',
-        //         'b64': canvas.toDataURL('image/jpeg', 0.8)
-        //     }
-        //     $.ajax({
-        //         type: "POST",
-        //         url: "saveImage.jsp",
-        //         data: d,
-        //         contentType: "application/x-www-form-urlencoded; charset=UTF-8",
-        //         success: function(data){
-        //             console.log(data);
-        //         }
-        //     });
-        //
-        //     $('.dummy-image').attr('src', '');
-        // });
+
+    function saveGSVScreenshot() {
+
+        const $dummyImageContainer = $('.dummy-image-container');
+
+        html2canvas($dummyImageContainer[0]).then(canvas => {
+
+            const d = {
+                'name': 'label-' + new Date().getTime() +'.jpg',
+                'b64': canvas.toDataURL('image/jpeg', 0.8)
+            }
+            $.ajax({
+                type: "POST",
+                url: "saveImage.jsp",
+                data: d,
+                contentType: "application/x-www-form-urlencoded; charset=UTF-8",
+                success: function(data){
+                    console.log(data);
+                }
+            });
+        });
     }
 
 
     $('.screen-capture').click(function() {
 
-        takeAndSaveScreenshot();
+        updateDummyImageFromGSV();
 
     });
 
@@ -191,6 +190,8 @@ $(function() {
         const y = e.clientY - $panorama.offset().top;
 
         placeLabel(null, x, y, labelType, HUMAN_VERIFICATION_STATE.VERIFIED_CORRECT, null);
+
+        labelStats.nLabelsManuallyPlaced++;
     }
 
     function placeLabel(optionalID, x, y, labelType, verificationState, optionalClasses) {
@@ -220,7 +221,7 @@ $(function() {
             $marker.addClass(optionalClasses);
         }
 
-        $('.panorama-container').append($marker);
+        $panoramaContainer.append($marker);
 
         const m = new Marker(optionalID ? optionalID : markerID, labelType, pov.heading, pov.pitch, x, y, newCoords.left, newCoords.top, verificationState);
         markers.push(m);
@@ -333,7 +334,6 @@ $(function() {
             const $sidebar = $('.sidebar');
 
             const $dummyImageContainer = $('.dummy-image-container');
-            const $panoContainer = $('.panorama-container');
 
             let sidebarRight = 0;
             let panoWidth = '70%';
@@ -346,9 +346,9 @@ $(function() {
             }
 
             $sidebar.css({'right': sidebarRight});
-            $panoContainer.css({'width': panoWidth});
+            $panoramaContainer.css({'width': panoWidth});
 
-            $dummyImageContainer.css({'height': $panoContainer.height(), 'width': $panoContainer.width(), 'top': $panoContainer.position().top, 'left': $panoContainer.position().left});
+            $dummyImageContainer.css({'height': $panoramaContainer.height(), 'width': $panoramaContainer.width(), 'top': $panoramaContainer.position().top, 'left': $panoramaContainer.position().left});
 
             // clear existing dummy markers as they might have moved
             $('.dummy-marker:not(.template)').remove();
@@ -398,7 +398,7 @@ $(function() {
             $('.actions-toolbar-overlay-container').show();
         });
 
-        $('.save-image').click(takeAndSaveScreenshot);
+        $('.save-image').click(updateDummyImageFromGSV);
 
 
         $('.toggle-sidebar-button').click(toggleSidebarHandler);
@@ -416,7 +416,7 @@ $(function() {
 
         $(document).on('keypress', function(e) {
             if (e.ctrlKey && e.key === 's') {
-                takeAndSaveScreenshot();
+                saveGSVScreenshot();
             }
         });
 
@@ -431,7 +431,7 @@ $(function() {
             isMouseDown = false;
 
             if ($(e.target).hasClass('widget-scene-canvas')) {
-                takeAndSaveScreenshot();
+                updateDummyImageFromGSV();
             }
         })
 
@@ -442,7 +442,7 @@ $(function() {
             }
         });
 
-        $('.panorama-container').on('click', function(e) {
+        $panoramaContainer.on('click', function(e) {
 
             if (isMarking) {
                 placeLabelHandler(e, currentLabelType);
@@ -458,7 +458,7 @@ $(function() {
         const newZoom = panorama.getPov().zoom;
         if (Number.isInteger(newZoom) && prevZoom !== panorama.getPov().zoom) {
             prevZoom = panorama.getPov().zoom;
-            setTimeout(takeAndSaveScreenshot, 20);
+            setTimeout(updateDummyImageFromGSV, 20);
         }
     });
 
@@ -519,7 +519,7 @@ $(function() {
 
             $b.attr('title', 'Confidence: ' + probability);
 
-            $('.panorama-container').append($b);
+            $panoramaContainer.append($b);
 
             $('.object-boundary-label-text', $b).text(LABEL_TYPES[label]);
 
@@ -633,7 +633,7 @@ $(function() {
             }); // update boxes to draw later
         }
 
-        console.log(boxes);
+        // console.log(boxes);
 
         renderBoxes(boxes); // Draw boxes
 
@@ -646,6 +646,7 @@ $(function() {
         endTime = new Date().getTime();
         console.log('Time taken: ' + (endTime - startTime) + 'ms');
     }
+
 
     setupEventHandlers();
 
