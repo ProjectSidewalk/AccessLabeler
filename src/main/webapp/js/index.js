@@ -58,48 +58,35 @@ $(function() {
     const LABEL_TYPES = {
         0: 'Seating',
         1: 'Shelter',
-        2: 'Signage'
+        2: 'Signage',
+        3: 'Trashcan'
     }
-
-
-    let areBoxesDrawn = false;
 
 
     const markers = [];
 
     let markerID = 0;
 
-    let nLabelsTotal = 0;
-    let nLabelsCorrect = 0;
-    let nLabelsIncorrect = 0;
+
+    let labelStats = {};
+    labelStats.nLabelsTotal = 0;
+    labelStats.nLabelsCorrect = 0;
+    labelStats.nLabelsIncorrect = 0;
 
 
-    function updateStats() {
-        $('.n-labels-correct-count').text(nLabelsCorrect);
-        $('.n-labels-incorrect-count').text(nLabelsIncorrect);
-        $('.n-labels-total-count').text(nLabelsTotal);
+    let lastPov;
+
+
+    function updateStatsUI() {
+        $('.n-labels-correct-count').text(labelStats.nLabelsCorrect);
+        $('.n-labels-incorrect-count').text(labelStats.nLabelsIncorrect);
+        $('.n-labels-total-count').text(labelStats.nLabelsTotal);
     }
 
     function calculateGSVScale() {
         const $panoramaContainer = $('.panorama-container');
         GSVScaleX = $panoramaContainer.width()/640;
         GSVScaleY = $panoramaContainer.height()/640;
-    }
-
-    function drawMarkerOnImage() {
-        const $img = $('.pano-image');
-        const imgWidth = $img.width();
-        const imgHeight = $img.height();
-        const degX = panorama.getPov().heading - panorama.getPhotographerPov().heading;
-        const x = degX * (Math.PI / 180) * (imgWidth/(2 * Math.PI));
-
-        const degY = panorama.getPov().pitch + panorama.getPhotographerPov().pitch;
-        const y = degY * (Math.PI / 90) * (imgHeight/(2 * Math.PI));
-
-        const p = project(degX, degY, imgWidth);
-
-        $('.pano-image-marker').css({'margin-left': x, 'margin-top': -y});
-        // $('.pano-image-marker').css({'margin-left': p.left, 'margin-top': p.top});
     }
 
     function takeAndSaveScreenshot() {
@@ -149,9 +136,6 @@ $(function() {
         //     $('.dummy-image').attr('src', '');
         // });
     }
-
-
-    let lastPov;
 
 
     $('.screen-capture').click(function() {
@@ -251,15 +235,8 @@ $(function() {
 
     }
 
+    // Moves the already markers when the panorama is moved.
     function moveMarkers() {
-
-        // $('.marker').each(function() {
-        //
-        //     const $marker = $(this);
-        //     const position = getPosition(parseInt($marker.attr('data-x')), parseInt($marker.attr('data-y')), $panorama.width(), $panorama.height(), 1, lastPov.heading, lastPov.pitch);
-        //     const newCoords = povToPixel3d(position, panorama.getPov(), 1, $panorama.width(), $panorama.height());
-        //     $marker.css({'left': newCoords.left, 'top': newCoords.top});
-        // });
 
         const panoWidth = $panorama.width();
         const panoHeight = $panorama.height();
@@ -283,15 +260,6 @@ $(function() {
         }
     }
 
-
-    worker.addEventListener('message', (event) => {
-
-        const message = event.data;
-
-        console.log("from worker: " + JSON.stringify(message));
-    });
-
-
     function updateMarkerVerificationState(markerID, verificationState) {
         for (let i = 0; i < markers.length; i++) {
             const marker = markers[i];
@@ -304,48 +272,6 @@ $(function() {
     }
 
     function setupEventHandlers() {
-
-        function onPanoClickEnded(e) {
-            takeAndSaveScreenshot();
-        }
-
-        function postImageDataToWorker() {
-
-            takeAndSaveScreenshot();
-
-            // Set and pass generation settings to web worker
-            let data = {
-                task: 'object-detection'
-            };
-
-            const $dummyImageContainer = $('.dummy-image-container');
-
-            const $panoContainer = $('.panorama-container');
-            $dummyImageContainer.css({'height': $panoContainer.height(), 'width': $panoContainer.width(), 'top': $panoContainer.position().top, 'left': $panoContainer.position().left});
-
-            // clear existing dummy markers as they might have moved
-            $('.dummy-marker:not(.template)').remove();
-
-            var webglImage = (function convertCanvasToImage(canvas) {
-                var image = new Image();
-                image.src = canvas.toDataURL('image/png', 0.5);
-                return image;
-            })($('.widget-scene-canvas')[0]);
-
-            $('.dummy-image').attr('src', webglImage.src);
-
-            html2canvas($dummyImageContainer[0]).then(canvas => {
-
-                data.image =  canvas.toDataURL('image/png', 0.5); //getImageDataFromImage(OD_IMG)
-                data.targetType = 'overlay'
-                data.chartId = '#x' //OD_OUTPUT_CANVAS.id
-                data.elementIdToUpdate = '#y' //OD_OUTPUT_OVERLAY.id
-
-                startTime = new Date().getTime();
-                worker.postMessage(data);
-
-            });
-        }
 
         function startLabelingHandler(e) {
 
@@ -433,9 +359,9 @@ $(function() {
             e.preventDefault();
             e.stopPropagation();
 
-            nLabelsCorrect++;
-            nLabelsTotal++;
-            updateStats();
+            labelStats.nLabelsCorrect++;
+            labelStats.nLabelsTotal++;
+            updateStatsUI();
 
             const $closestObjectBoundary = $(e.target).closest('.object-boundary');
             $closestObjectBoundary.addClass('confirmed');
@@ -449,9 +375,9 @@ $(function() {
             e.preventDefault();
             e.stopPropagation();
 
-            nLabelsIncorrect++;
-            nLabelsTotal++;
-            updateStats();
+            labelStats.nLabelsIncorrect++;
+            labelStats.nLabelsTotal++;
+            updateStatsUI();
 
             const $closestObjectBoundary = $(e.target).closest('.object-boundary');
             $closestObjectBoundary.addClass('denied');
@@ -489,12 +415,8 @@ $(function() {
         $('.dummy-image').on('load', analyzeImage);
 
         $(document).on('keypress', function(e) {
-            if (e.key == 'r') {
-                if ($('.panorama-container').hasClass('half-size')) {
-                    $('.panorama-container').removeClass('half-size');
-                } else {
-                    $('.panorama-container').addClass('half-size');
-                }
+            if (e.ctrlKey && e.key === 's') {
+                takeAndSaveScreenshot();
             }
         });
 
@@ -513,13 +435,12 @@ $(function() {
             }
         })
 
+
         $(document).on('mousemove', function () {
             if (!isMarking && isMouseDown) {
                 moveMarkers();
             }
         });
-
-        $('.widget-scene-canvas').on('mouseup', onPanoClickEnded);
 
         $('.panorama-container').on('click', function(e) {
 
@@ -674,9 +595,6 @@ $(function() {
 
     async function analyzeImage() {
 
-        if (areBoxesDrawn)
-            return;
-
         startTime = new Date().getTime();
 
         const image = $('.dummy-image')[0];
@@ -734,7 +652,7 @@ $(function() {
     calculateGSVScale();
     loadModels();
 
-    updateStats();
+    updateStatsUI();
 
     // Simulating a click right upon loading as we want to show the labeling interface by default.
     $('.show-labels-toolbar').click();
