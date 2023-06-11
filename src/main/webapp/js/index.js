@@ -1,16 +1,37 @@
-function get(name){
-    if(name=(new RegExp('[?&]'+encodeURIComponent(name)+'=([^&]*)')).exec(location.search))
-        return decodeURIComponent(name[1]);
-}
+
 class Marker {
-    constructor(id, type, heading, pitch, text) {
+
+    /**
+     * Marker object. Should be placed for each label i.e. human placed or AI suggested.
+     * @param id ID of the marker. Should be unique for each location.
+     * @param type Type of the marker. Should be one of the types defined in the labelsDescriptor.js.
+     * @param heading Heading of the marker. Should be between 0 and 360.
+     * @param pitch Pitch of the marker. Should be between -90 and 90.
+     * @param x X coordinate of the marker in the GCV window.
+     * @param y Y coordinate of the marker in the GCV window.
+     */
+    constructor(id, type, heading, pitch, x, y, left, right, verificationState) {
         this.id = id;
         this.type = type;
         this.heading = heading;
         this.pitch = pitch;
-        this.text = text;
+        this.originalX = x;
+        this.originalY = y;
+        this.left = left;
+        this.top = top;
+        this.verificationState = verificationState;
     }
 }
+
+
+const HUMAN_VERIFICATION_STATE = {
+    'NOT_VERIFIED': 'NOT_VERIFIED',
+    'VERIFIED_CORRECT': 'VERIFIED_CORRECT',
+    'VERIFIED_INCORRECT': 'VERIFIED_INCORRECT',
+    'VERIFIED_OTHER': 'VERIFIED_OTHER'
+}
+
+
 $(function() {
     let isMouseDown = false;
 
@@ -18,7 +39,6 @@ $(function() {
 
     let currentLabelType = null;
 
-    var $markers = $('.marker');
     var $panorama = $('#panorama');
 
     let startTime = null;
@@ -28,8 +48,12 @@ $(function() {
 
     const worker = new Worker('js/worker.js');
 
-    const GSVScaleX = $('.panorama-container').width()/640;
-    const GSVScaleY = $('.panorama-container').height()/640;
+    let GSVScaleX = $('.panorama-container').width()/640;
+    let GSVScaleY = $('.panorama-container').height()/640;
+
+
+    const MARKER_DISTANCE_BUFFER = 50;
+
 
     const LABEL_TYPES = {
         0: 'Seating',
@@ -37,18 +61,13 @@ $(function() {
         2: 'Signage'
     }
 
+
     let areBoxesDrawn = false;
 
-    const dummyBox = {
-        bounding: [60.79486846923828, 222.09311096191405, 152.9200897216797, 89.72289733886718],
-        label: 1,
-        probability: 0.9720821380615234
-    }
 
     const markers = [];
 
     let markerID = 0;
-
 
     let nLabelsTotal = 0;
     let nLabelsCorrect = 0;
@@ -61,220 +80,10 @@ $(function() {
         $('.n-labels-total-count').text(nLabelsTotal);
     }
 
-    /**
-     * Calculates heading and pitch for a Google Maps marker using (x, y) coordinates
-     * From PanoMarker spec
-     * @param canvas_x          X coordinate (pixel) of the label
-     * @param canvas_y          Y coordinate (pixel) of the label
-     * @param canvas_width      Original canvas width
-     * @param canvas_height     Original canvas height
-     * @param zoom              Original zoom level of the label
-     * @param heading           Original heading of the label
-     * @param pitch             Original pitch of the label
-     * @returns {{heading: float, pitch: float}}
-     */
-    function getPosition(canvas_x, canvas_y, canvas_width, canvas_height, zoom, heading, pitch) {
-        function sgn(x) {
-            return x >= 0 ? 1 : -1;
-        }
-
-        let PI = Math.PI;
-        let cos = Math.cos;
-        let sin = Math.sin;
-        let tan = Math.tan;
-        let sqrt = Math.sqrt;
-        let atan2 = Math.atan2;
-        let asin = Math.asin;
-        let fov = _get3dFov(zoom) * PI / 180.0;
-        let width = canvas_width;
-        let height = canvas_height;
-        let h0 = heading * PI / 180.0;
-        let p0 = pitch * PI / 180.0;
-        let f = 0.5 * width / tan(0.5 * fov);
-        let x0 = f * cos(p0) * sin(h0);
-        let y0 = f * cos(p0) * cos(h0);
-        let z0 = f * sin(p0);
-        let du = (canvas_x) - width / 2;
-        let dv = height / 2 - (canvas_y - 5);
-        let ux = sgn(cos(p0)) * cos(h0);
-        let uy = -sgn(cos(p0)) * sin(h0);
-        let uz = 0;
-        let vx = -sin(p0) * sin(h0);
-        let vy = -sin(p0) * cos(h0);
-        let vz = cos(p0);
-        let x = x0 + du * ux + dv * vx;
-        let y = y0 + du * uy + dv * vy;
-        let z = z0 + du * uz + dv * vz;
-        let R = sqrt(x * x + y * y + z * z);
-        let h = atan2(x, y);
-        let p = asin(z / R);
-        return {
-            heading: h * 180.0 / PI,
-            pitch: p * 180.0 / PI
-        };
-    }
-
-    /**
-     * From PanoMarker spec
-     * @param zoom
-     * @returns {number}
-     */
-    function _get3dFov (zoom) {
-        return zoom <= 2 ?
-            126.5 - zoom * 36.75 :  // linear descent
-            195.93 / Math.pow(1.92, zoom); // parameters determined experimentally
-    }
-
-    /**
-     * Given the current POV, this method calculates the Pixel coordinates on the
-     * given viewport for the desired POV. All credit for the math this method goes
-     * to user3146587 on StackOverflow: http://goo.gl/0GGKi6
-     *
-     * My own approach to explain what is being done here (including figures!) can
-     * be found at http://martinmatysiak.de/blog/view/panomarker
-     *
-     * @param {StreetViewPov} targetPov The point-of-view whose coordinates are
-     *     requested.
-     * @param {StreetViewPov} currentPov POV of the viewport center.
-     * @param {number} zoom The current zoom level.
-     * @param {number} Width of the panorama canvas.
-     * @param {number} Height of the panorama canvas.
-     * @return {Object} Top and Left offsets for the given viewport that point to
-     *     the desired point-of-view.
-     */
-    function povToPixel3d (targetPov, currentPov, zoom, canvasWidth, canvasHeight) {
-
-        // Gather required variables and convert to radians where necessary
-        let width = canvasWidth;
-        let height = canvasHeight;
-
-        // Corrects width and height for mobile phones
-        if (isMobile()) {
-            width = window.innerWidth;
-            height = window.innerHeight;
-        }
-
-        let target = {
-            left: width / 2,
-            top: height / 2
-        };
-
-        let DEG_TO_RAD = Math.PI / 180.0;
-        let fov = _get3dFov(zoom) * DEG_TO_RAD;
-        let h0 = currentPov.heading * DEG_TO_RAD;
-        let p0 = currentPov.pitch * DEG_TO_RAD;
-        let h = targetPov.heading * DEG_TO_RAD;
-        let p = targetPov.pitch * DEG_TO_RAD;
-
-        // f = focal length = distance of current POV to image plane
-        let f = (width / 2) / Math.tan(fov / 2);
-
-        // our coordinate system: camera at (0,0,0), heading = pitch = 0 at (0,f,0)
-        // calculate 3d coordinates of viewport center and target
-        let cos_p = Math.cos(p);
-        let sin_p = Math.sin(p);
-
-        let cos_h = Math.cos(h);
-        let sin_h = Math.sin(h);
-
-        let x = f * cos_p * sin_h;
-        let y = f * cos_p * cos_h;
-        let z = f * sin_p;
-
-        let cos_p0 = Math.cos(p0);
-        let sin_p0 = Math.sin(p0);
-
-        let cos_h0 = Math.cos(h0);
-        let sin_h0 = Math.sin(h0);
-
-        let x0 = f * cos_p0 * sin_h0;
-        let y0 = f * cos_p0 * cos_h0;
-        let z0 = f * sin_p0;
-
-        let nDotD = x0 * x + y0 * y + z0 * z;
-        let nDotC = x0 * x0 + y0 * y0 + z0 * z0;
-
-        // nDotD == |targetVec| * |currentVec| * cos(theta)
-        // nDotC == |currentVec| * |currentVec| * 1
-        // Note: |currentVec| == |targetVec| == f
-
-        // Sanity check: the vectors shouldn't be perpendicular because the line
-        // from camera through target would never intersect with the image plane
-        if (Math.abs(nDotD) < 1e-6) {
-            return null;
-        }
-
-        // t is the scale to use for the target vector such that its end
-        // touches the image plane. It's equal to 1/cos(theta) ==
-        //     (distance from camera to image plane through target) /
-        //     (distance from camera to target == f)
-        let t = nDotC / nDotD;
-
-        // Sanity check: it doesn't make sense to scale the vector in a negative
-        // direction. In fact, it should even be t >= 1.0 since the image plane
-        // is always outside the pano sphere (except at the viewport center)
-        if (t < 0.0) {
-            return null;
-        }
-
-        // (tx, ty, tz) are the coordinates of the intersection point between a
-        // line through camera and target with the image plane
-        let tx = t * x;
-        let ty = t * y;
-        let tz = t * z;
-
-        // u and v are the basis vectors for the image plane
-        let vx = -sin_p0 * sin_h0;
-        let vy = -sin_p0 * cos_h0;
-        let vz = cos_p0;
-
-        let ux = cos_h0;
-        let uy = -sin_h0;
-        let uz = 0;
-
-        // normalize horiz. basis vector to obtain orthonormal basis
-        let ul = Math.sqrt(ux * ux + uy * uy + uz * uz);
-        ux /= ul;
-        uy /= ul;
-        uz /= ul;
-
-        // project the intersection point t onto the basis to obtain offsets in
-        // terms of actual pixels in the viewport
-        let du = tx * ux + ty * uy + tz * uz;
-        let dv = tx * vx + ty * vy + tz * vz;
-
-        // use the calculated pixel offsets
-        target.left += du;
-        target.top -= dv;
-
-        return target;
-    }
-
-    function projectLat(lat, height) {
-        if (isNaN(lat) || typeof lat !== 'number' || lat < -90 || lat > 90) {
-            throw new Error('latitude is not valid');
-        }
-        if (isNaN(height) || typeof height !== 'number'){
-            throw new Error('viewport height is not valid');
-        }
-        return ((lat - 90) / -180 * height);
-    }
-
-    function projectLng(lng, width) {
-        if (isNaN(lng) || typeof lng !== 'number' || lng < -180 || lng > 180) {
-            throw new Error('longitude is not valid');
-        }
-        if (isNaN(width) || typeof width !== 'number'){
-            throw new Error('viewport width is not valid');
-        }
-        return (lng + 180) / 360 * width;
-    }
-
-    function project(lng, lat, width) {
-        return {
-            left: projectLng(lng, width),
-            top: projectLat(lat, width / 2)
-        };
+    function calculateGSVScale() {
+        const $panoramaContainer = $('.panorama-container');
+        GSVScaleX = $panoramaContainer.width()/640;
+        GSVScaleY = $panoramaContainer.height()/640;
     }
 
     function drawMarkerOnImage() {
@@ -292,10 +101,6 @@ $(function() {
         $('.pano-image-marker').css({'margin-left': x, 'margin-top': -y});
         // $('.pano-image-marker').css({'margin-left': p.left, 'margin-top': p.top});
     }
-
-    setTimeout(function() {
-        $('.dummy-image').attr('src', $('.abcd').attr('src'));
-    }, 1000);
 
     function takeAndSaveScreenshot() {
 
@@ -356,45 +161,65 @@ $(function() {
     });
 
 
-    function isMobile() {
-        return false;
-    }
-
     function showLabels() {
 
-        function renderLabels(labels) {
+        function renderLabels(labelGroups) {
 
             const $labelToolbar = $('.label-toolbar');
 
+            $('.label-group-container:not(.template)').remove();
             $('.label-toolbar-item.place-label:not(.template)').remove();
 
-            for (let i = 0; i < labels.length; i++) {
-                const label = labels[i];
-                const $labelButton = $('.label-toolbar-item.place-label.template').clone().removeClass('template');
-                $labelButton.attr('data-label-type', label.type);
-                $labelButton.addClass(label.type);
-                $('.label-toolbar-item-text', $labelButton).text(label.displayName);
-                $labelToolbar.append($labelButton);
+
+            for (let i = 0; i < labelGroups.length; i++) {
+
+                const $labelToolbarGroup = $('.label-group-container.template').clone().removeClass('template');
+                $('.label-group-title', $labelToolbarGroup).text(labelGroups[i].title);
+
+                const labels = labelGroups[i].labels;
+
+                for (let i = 0; i < labels.length; i++) {
+                    const label = labels[i];
+                    const $labelButton = $('.label-toolbar-item.place-label.template', $labelToolbarGroup).clone().removeClass('template');
+                    $labelButton.attr('data-label-type', label.type);
+                    $labelButton.addClass(label.type);
+
+                    $('.label-icon', $labelButton).attr('href', label.icon.id);
+                    $('svg', $labelButton).attr('viewBox', label.icon.viewBox);
+
+                    $('.label-toolbar-item-text', $labelButton).text(label.displayName);
+                    $('.label-group-content', $labelToolbarGroup).append($labelButton);
+                }
+
+                $labelToolbar.append($labelToolbarGroup);
             }
         }
 
-        renderLabels(LabelsDescriptor.labels);
+        renderLabels(LabelsDescriptor.labelGroups);
         $('.label-toolbar-overlay-container').show();
     }
 
-    function placeLabel(e, labelType) {
+    function placeLabelHandler(e, labelType) {
+        e.preventDefault();
+        e.stopPropagation();
+
         const x = e.clientX - $panorama.offset().left;
         const y = e.clientY - $panorama.offset().top;
+
+        placeLabel(null, x, y, labelType, HUMAN_VERIFICATION_STATE.VERIFIED_CORRECT, null);
+    }
+
+    function placeLabel(optionalID, x, y, labelType, verificationState, optionalClasses) {
+
         const pov = panorama.getPov();
-        const position = getPosition(x, y, $panorama.width(), $panorama.height(), 1, pov.heading, pov.pitch);
-        var newCoords = povToPixel3d(position, panorama.getPov(), 1, $panorama.width(), $panorama.height());
+        const position = getPosition(x, y, $panorama.width(), $panorama.height(), pov.zoom, pov.heading, pov.pitch);
+        var newCoords = povToPixel3d(position, panorama.getPov(), pov.zoom, $panorama.width(), $panorama.height());
 
         const $marker = $('.marker.template').clone().removeClass('template');
 
         $marker.css({'left': newCoords.left, 'top': newCoords.top});
 
-        $marker.attr('data-x', x);
-        $marker.attr('data-y', y);
+        $marker.attr('data-id', markerID);
 
         lastPov = {
             heading: pov.heading,
@@ -403,34 +228,61 @@ $(function() {
 
         $marker.addClass('marker-' + labelType);
 
+        if (verificationState === HUMAN_VERIFICATION_STATE.NOT_VERIFIED) {
+            $marker.addClass('not-verified');
+        }
+
+        if (optionalClasses) {
+            $marker.addClass(optionalClasses);
+        }
+
         $('.panorama-container').append($marker);
 
-        const m = new Marker(markerID, labelType, pov.heading, pov.pitch);
+        const m = new Marker(optionalID ? optionalID : markerID, labelType, pov.heading, pov.pitch, x, y, newCoords.left, newCoords.top, verificationState);
         markers.push(m);
 
+        if (!optionalID) {
+            markerID++;
+        }
+
         $('.stop-labeling').click(); // Automatically stop labeling after placing a label
+
+        return m;
 
     }
 
     function moveMarkers() {
 
-        $('.marker').each(function() {
-
-            const $marker = $(this);
-            const position = getPosition(parseInt($marker.attr('data-x')), parseInt($marker.attr('data-y')), $panorama.width(), $panorama.height(), 1, lastPov.heading, lastPov.pitch);
-            const newCoords = povToPixel3d(position, panorama.getPov(), 1, $panorama.width(), $panorama.height());
-            $marker.css({'left': newCoords.left, 'top': newCoords.top});
-        });
+        // $('.marker').each(function() {
         //
-        // $('.object-boundary').each(function() {
-        //     const $boundary = $(this);
-        //     const position  = getPosition(parseFloat($boundary.attr('data-x')), parseFloat($boundary.attr('data-y')), $panorama.width(), $panorama.height(), 1, lastPov.heading, lastPov.pitch);
+        //     const $marker = $(this);
+        //     const position = getPosition(parseInt($marker.attr('data-x')), parseInt($marker.attr('data-y')), $panorama.width(), $panorama.height(), 1, lastPov.heading, lastPov.pitch);
         //     const newCoords = povToPixel3d(position, panorama.getPov(), 1, $panorama.width(), $panorama.height());
-        //     $boundary.css({'left': newCoords.left, 'top': newCoords.top});
+        //     $marker.css({'left': newCoords.left, 'top': newCoords.top});
         // });
+
+        const panoWidth = $panorama.width();
+        const panoHeight = $panorama.height();
+
+        const pov = panorama.getPov();
+
+        for (let i = 0; i < markers.length; i++) {
+            const marker = markers[i];
+            const $marker = $('.marker-' + marker.type + '[data-id="' + marker.id + '"]');
+            const position = getPosition(marker.originalX, marker.originalY, panoWidth, panoHeight, pov.zoom, marker.heading, marker.pitch);
+            const newCoords = povToPixel3d(position, pov, pov.zoom, panoWidth, panoHeight);
+
+            if (!newCoords) {
+                // console.log('newCoords is null. Marker: ' + JSON.stringify(marker));
+                continue;
+            }
+
+            $marker.css({'left': newCoords.left, 'top': newCoords.top});
+            marker.left = newCoords.left;
+            marker.top = newCoords.top;
+        }
     }
 
-    // Utility functions
 
     worker.addEventListener('message', (event) => {
 
@@ -438,6 +290,18 @@ $(function() {
 
         console.log("from worker: " + JSON.stringify(message));
     });
+
+
+    function updateMarkerVerificationState(markerID, verificationState) {
+        for (let i = 0; i < markers.length; i++) {
+            const marker = markers[i];
+            if (marker.id === markerID) {
+                marker.verificationState = verificationState;
+                $('.marker-' + marker.type + '[data-id="' + marker.id + '"]').removeClass('not-verified').addClass('verified');
+                return;
+            }
+        }
+    }
 
     function setupEventHandlers() {
 
@@ -497,7 +361,11 @@ $(function() {
             $('.mode-indicator').fadeIn(200);
         }
 
-        function stopLabelingHandler() {
+        function stopLabelingHandler(e) {
+
+            e.preventDefault();
+            e.stopPropagation();
+
             isMarking = false;
             $('.mode-indicator').removeClass('marking');
 
@@ -505,7 +373,7 @@ $(function() {
             $('.mode-indicator').fadeOut(200);
         }
 
-        function placeLabelHandler() {
+        function showLabelsHandler() {
             $('.actions-toolbar-overlay-container').hide();
             showLabels();
             $('.place-label').click(startLabelingHandler);
@@ -518,7 +386,7 @@ $(function() {
         }
 
         function nextLocationHandler() {
-            dataIDX = getRandomInt (0, 6200);
+            dataIDX = getRandomInt (0, GIS_DATA.features.length - 1);
             const location = GIS_DATA.features[dataIDX].geometry.coordinates;
             panorama.setPosition({lat: location[1], lng: location[0]});
 
@@ -561,25 +429,41 @@ $(function() {
         }
 
         function confirmLabelHandler(e) {
+
+            e.preventDefault();
+            e.stopPropagation();
+
             nLabelsCorrect++;
             nLabelsTotal++;
             updateStats();
 
-            $(e.target).closest('.object-boundary').addClass('confirmed');
+            const $closestObjectBoundary = $(e.target).closest('.object-boundary');
+            $closestObjectBoundary.addClass('confirmed');
+
+            const id = parseInt($closestObjectBoundary.attr('data-id'));
+            updateMarkerVerificationState(id, HUMAN_VERIFICATION_STATE.VERIFIED_CORRECT);
         }
 
         function denyLabelHandler(e) {
+
+            e.preventDefault();
+            e.stopPropagation();
+
             nLabelsIncorrect++;
             nLabelsTotal++;
             updateStats();
 
-            $(e.target).closest('.object-boundary').remove();
+            const $closestObjectBoundary = $(e.target).closest('.object-boundary');
+            $closestObjectBoundary.addClass('denied');
+
+            const id = parseInt($closestObjectBoundary.attr('data-id'));
+            updateMarkerVerificationState(id, HUMAN_VERIFICATION_STATE.VERIFIED_INCORRECT);
         }
 
-        $('.next-location').click(nextLocationHandler);
+        $('.next-location-button').click(nextLocationHandler);
         $('.previous-location').click(previousLocationHandler);
 
-        $('.show-labels-toolbar').on('click', placeLabelHandler);
+        $('.show-labels-toolbar').on('click', showLabelsHandler);
 
         $('.stop-labeling').click(stopLabelingHandler);
 
@@ -592,6 +476,10 @@ $(function() {
 
 
         $('.toggle-sidebar-button').click(toggleSidebarHandler);
+
+        $(window).on('resize', function(){
+           calculateGSVScale();
+        });
 
 
         $(document).on('click', '.object-boundary-correct', confirmLabelHandler);
@@ -636,7 +524,7 @@ $(function() {
         $('.panorama-container').on('click', function(e) {
 
             if (isMarking) {
-                placeLabel(e, currentLabelType);
+                placeLabelHandler(e, currentLabelType);
             } else {
                 moveMarkers();
             }
@@ -668,24 +556,64 @@ $(function() {
             const label = box.label;
             const probability = box.probability;
 
+            const scaledX = x * GSVScaleX;
+            const scaledY = y * GSVScaleY;
+            const scaledW = w * GSVScaleX;
+            const scaledH = h * GSVScaleY;
+
+            const centerX = scaledX + (scaledW/2);
+            const centerY = scaledY + (scaledH/2);
+
+
+            // Let's see if this was already detected by CV.
+            let existingMarker = null;
+
+            // Check if this is an object we've already verified
+            for (let j = 0; j < markers.length; j++) {
+
+                if (markers[j].type === label) {
+
+                    const delta = Math.sqrt(Math.pow(centerX - markers[j].left, 2) + Math.pow(centerY - markers[j].top, 2));
+
+                    if (delta < MARKER_DISTANCE_BUFFER && label === markers[j].type && markers[j].verificationState !== HUMAN_VERIFICATION_STATE.NOT_VERIFIED) {
+
+                        console.log('Delta: ' + delta);
+
+                        existingMarker = markers[j];
+                        break;
+                    }
+                }
+            }
+
             const $b = $('.object-boundary.template').clone().removeClass('template').addClass('object-' + i);
+
             $b.css({
-                top: y * GSVScaleY,
-                left: x * GSVScaleX,
-                width: w * GSVScaleX,
-                height: h * GSVScaleY,
+                left: scaledX,
+                top: scaledY,
+                width: scaledW,
+                height: scaledH
             });
+
             $b.addClass('label-' + label);
-            $b.attr('data-x', (x * GSVScaleX));
-            $b.attr('data-y', (x * GSVScaleY));
+
+            $b.attr('title', 'Confidence: ' + probability);
 
             $('.panorama-container').append($b);
 
             $('.object-boundary-label-text', $b).text(LABEL_TYPES[label]);
+
+            if (existingMarker) {
+                if (existingMarker.verificationState === HUMAN_VERIFICATION_STATE.VERIFIED_CORRECT) {
+                    $b.addClass('confirmed');
+                } else if (existingMarker.verificationState === HUMAN_VERIFICATION_STATE.VERIFIED_INCORRECT) {
+                    $b.addClass('denied');
+                }
+            }
+
+            // Place a dummy label in the center of the box. We will use this to determine if the user has already verified this object.
+            const marker = placeLabel(existingMarker ? existingMarker.id : null, (scaledX + (scaledW/2)), (scaledY + (scaledH/2)), label, HUMAN_VERIFICATION_STATE.NOT_VERIFIED, 'cv-suggested');
+            $b.attr('data-id', marker.id);
         }
-
-        // areBoxesDrawn = true;
-
     }
 
     let session = null;
@@ -753,13 +681,6 @@ $(function() {
 
         const image = $('.dummy-image')[0];
 
-        // let obj = new Image();
-        // obj.src = image.src;
-        //
-        // worker.postMessage({
-        //     image: obj
-        // });
-
         const [modelWidth, modelHeight] = inputShape.slice(2);
         const [input, xRatio, yRatio] = preprocessing(image, modelWidth, modelHeight);
 
@@ -809,6 +730,8 @@ $(function() {
     }
 
     setupEventHandlers();
+
+    calculateGSVScale();
     loadModels();
 
     updateStats();
