@@ -9,7 +9,7 @@
 <%@ page contentType="text/html;charset=UTF-8" language="java" %>
 <%
     String fileName = request.getParameter("name");
-    String b64Data = request.getParameter("b64");
+    String data = request.getParameter("data");
 
-    saveFile(b64Data, fileName, FileManager.IMAGE_DIR);
+    saveFile(data, fileName, FileManager.LOGS_DIR);
 %>

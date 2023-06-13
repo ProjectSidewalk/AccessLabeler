@@ -17,7 +17,9 @@
     <script src="https://cdn.jsdelivr.net/npm/onnxruntime-web/dist/ort.min.js"></script>
     <script src="https://docs.opencv.org/4.7.0/opencv.js"></script>
 
-    <script src="js/data-selected.js"></script>
+<%--    <script src="js/data-selected.js"></script>--%>
+    <script src="js/data-KCGIS-100-random.js"></script>
+
     <script src="js/labelsDescriptor.js"></script>
     <script src="js/utils.js"></script>
     <script src="js/index.js"></script>
@@ -27,6 +29,7 @@
 
 <svg fill="none" xmlns="http://www.w3.org/2000/svg" style="display: none;">
 
+    <%-- viewBox="0 0 24 24" --%>
     <symbol id="tick-icon">
         <path d="M12 22C17.5 22 22 17.5 22 12C22 6.5 17.5 2 12 2C6.5 2 2 6.5 2 12C2 17.5 6.5 22 12 22Z" stroke="#292D32" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path>
         <path d="M7.75 12L10.58 14.83L16.25 9.17004" stroke="#292D32" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path>
@@ -85,7 +88,7 @@
     </symbol>
 
     <%-- viewBox="0 0 77 77" --%>
-    <symbol id="next-icon">
+    <symbol id="arrow-icon">
         <rect x="1.5" y="1.5" width="74" height="74" rx="37" stroke="white" stroke-width="3"></rect>
         <path d="M40.5057 51L38.3182 48.8409L47.3239 39.8352H24V36.7102H47.3239L38.3182 27.733L40.5057 25.5455L53.233 38.2727L40.5057 51Z" fill="white"></path>
     </symbol>
@@ -193,6 +196,29 @@
 
 <%--<img src="sv.jpg" width="100%" style="z-index: 100;" class="abcd">--%>
 
+<div class="mission-stats-panel-container">
+
+    <div class="mission-stats-panel-title">
+        <div class="mission-stats-panel-title-text">Mission Completed!</div>
+<%--        <div class="mission-stats-panel-title-icon">--%>
+<%--            <svg viewBox="0 0 24 24">--%>
+<%--                <use href="#tick-icon"></use>--%>
+<%--            </svg>--%>
+<%--        </div>--%>
+    </div>
+
+    <div class="mission-stats-content">
+        <div class="mission-target-container">
+            <div class="mission-target-title">Target:&nbsp;</div>
+            <div class="mission-target-value"></div>
+        </div>
+        <div class="mission-progress-container">
+            <div class="mission-progress-title">Current:&nbsp;</div>
+            <div class="mission-progress-value"></div>
+        </div>
+    </div>
+</div>
+
 <div class="sidebar collapsed">
     <div class="sidebar-title">StreetscapeCV</div>
     <div class="sidebar-content">
@@ -222,6 +248,27 @@
                 </svg>
             </div>
             <div class="sidebar-section-title mission-stats-title">Mission Stats</div>
+<%--            <div class="sidebar-section-content mission-stats-content">--%>
+<%--                <div class="mission-stats-item">--%>
+<%--                    <div class="mission-stats-item-title">Total Images</div>--%>
+<%--                    <div class="mission-stats-item-value">0</div>--%>
+<%--                </div>--%>
+<%--                <div class="mission-stats-item">--%>
+<%--                    <div class="mission-stats-item-title">Total Labels</div>--%>
+<%--                    <div class="mission-stats-item-value">0</div>--%>
+<%--                </div>--%>
+<%--                <div class="mission-stats-item">--%>
+<%--                    <div class="mission-stats-item-title">Total Labels Correct</div>--%>
+<%--                    <div class="mission-stats-item-value">0</div>--%>
+<%--                </div>--%>
+<%--                <div class="mission-stats-item">--%>
+<%--                    <div class="mission-stats-item-title">Total Labels Incorrect</div>--%>
+<%--                    <div class="mission-stats-item-value">0</div>--%>
+<%--                </div>--%>
+<%--                <div class="mission-stats-item">--%>
+<%--                    <div class="mission-stats-item-title">Total Labels Skipped</div>--%>
+<%--                    <div class="mission-stats-item-value">0</div>--%>
+<%--                </div>--%>
         </div>
         <div class="sidebar-section tips-container">
             <div class="sidebar-icon tips-icon">
@@ -231,13 +278,18 @@
             </div>
             <div class="sidebar-section-title tips-title">Tips</div>
         </div>
+
         <div class="sidebar-section next-location-button">
             <div class="sidebar-section-title next-location-button-title">Next Stop</div>
             <div class="sidebar-icon next-location-button-icon">
                 <svg viewBox="0 0 77 77">
-                    <use href="#next-icon"></use>
+                    <use href="#arrow-icon"></use>
                 </svg>
             </div>
+        </div>
+
+        <div class="sidebar-section submit-button">
+            <div class="sidebar-section-title submit-button-title">Done</div>
         </div>
     </div>
     <div class="toggle-sidebar-button"></div>
@@ -289,9 +341,7 @@
             });
 
 
-        panorama.addListener("pov_changed", () => {
-            $('.object-boundary:not(.template)').remove();
-        });
+
     }
 </script>
 <script async defer

@@ -4,7 +4,7 @@ const LabelsDescriptor= {
         "labels": [
             {
                 "displayName": "Shelter",
-                "type": "shelter",
+                "labelType": "shelter",
                 "icon": {
                     "id": "#shelter-icon",
                     "viewBox": "0 0 31 31"
@@ -12,7 +12,7 @@ const LabelsDescriptor= {
             },
             {
                 "displayName": "Seating",
-                "type": "seating",
+                "labelType": "seating",
                 "icon": {
                     "id": "#seating-icon",
                     "viewBox": "0 0 42 43"
@@ -20,7 +20,7 @@ const LabelsDescriptor= {
             },
             {
                 "displayName": "Signage",
-                "type": "signage",
+                "labelType": "signage",
                 "icon": {
                     "id": "#signage-icon",
                     "viewBox": "0 0 39 39"
@@ -28,7 +28,7 @@ const LabelsDescriptor= {
             },
             {
                 "displayName": "Trash Can",
-                "type": "trashcan",
+                "labelType": "trashcan",
                 "icon": {
                     "id": "#trashcan-icon",
                     "viewBox": "0 0 24 25"
