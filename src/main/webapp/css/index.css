@@ -4,10 +4,11 @@ body {
 
 .panorama-container {
     position: absolute;
-    bottom: 0;
-    left: 0;
-    height: calc(100vh);
-    width: calc(100vw - 120px);
+    top: 50%;
+    left: calc(50% - 60px);
+    transform: translate(-50%, -50%);
+    height: 640px;
+    width: 640px;
     transition: all 0.1s;
     overflow: hidden;
 }
@@ -79,10 +80,10 @@ body {
 .screen-capture { position: absolute; bottom: 0; height: 50px; display: flex; align-content: center; justify-content: center; background: burlywood; width: 100%; padding: 10px; cursor: pointer; }
 
 
-.actions-toolbar-overlay-container, .label-toolbar-overlay-container { pointer-events: none; width: fit-content; height: 120px; display: flex; align-items: center; justify-content: center; z-index: 2; top:0; position: absolute;  left: 50%; transform: translateX(-50%); padding: 10px; border-bottom-left-radius: 10px; border-bottom-right-radius: 10px; font-size: 14px; font-weight: bold; }
+.actions-toolbar-overlay-container, .label-toolbar-overlay-container { pointer-events: none; width: fit-content; height: 120px; display: flex; align-items: center; justify-content: center; z-index: 2; top:0; position: absolute;  left: 50%; transform: translateX(-50%); padding: 10px; border-bottom-left-radius: 10px; border-bottom-right-radius: 10px; font-size: 14px; font-weight: bold; display: none; }
 .actions-toolbar-overlay { width: fit-content; background: rgba(255, 255, 255, 0.5); padding: 10px; position: absolute; height: 100%; pointer-events: all; }
 .label-toolbar-overlay { width: 100%; }
-.label-toolbar-overlay-container { width: fit-content; pointer-events: all; background: rgba(255, 255, 255, 0.7); }
+.label-toolbar-overlay-container { width: fit-content; pointer-events: all; background: rgba(255, 255, 255, 0.7); display: none !important; }
 .actions-toolbar, .label-toolbar { display: flex; justify-content: center; }
 
 .label-group-title { margin-bottom: 6px; font-size: 13px; font-weight: 600; letter-spacing: 0.03em; display: none; }

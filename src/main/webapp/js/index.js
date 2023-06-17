@@ -123,7 +123,7 @@ $(function() {
 
         var webglImage = (function convertCanvasToImage(canvas) {
             var image = new Image();
-            image.src = canvas.toDataURL('image/jpeg', 0.8);
+            image.src = canvas.toDataURL('image/jpeg', 1);
             return image;
         })($('.widget-scene-canvas')[0]);
 
@@ -135,11 +135,16 @@ $(function() {
 
         const $dummyImageContainer = $('.dummy-image-container');
 
+        $panoramaContainer.css('outline', '10px solid goldenrod');
+        setTimeout(function() {
+            $panoramaContainer.css('outline', 'none');
+        }, 800);
+
         html2canvas($dummyImageContainer[0]).then(canvas => {
 
             const d = {
                 'name': 'label-' + new Date().getTime() +'.jpg',
-                'b64': canvas.toDataURL('image/jpeg', 0.8)
+                'b64': canvas.toDataURL('image/jpeg', 1)
             }
             $.ajax({
                 type: "POST",
