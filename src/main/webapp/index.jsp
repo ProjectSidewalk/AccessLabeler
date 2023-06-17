@@ -128,40 +128,41 @@
     </div>
 </div>
 
-<div class="label-toolbar-overlay-container" style="display: none;">
-    <div class="label-toolbar-overlay">
-        <div class="label-toolbar">
+<div class="panorama-container">
 
-            <div class="label-group-container template">
-                <div class="label-group-title">AI Supported Labels</div>
-                <div class="label-group-content">
-                    <div class="label-toolbar-item place-label template" data-label-type="">
-                        <div class="label-toolbar-item-icon">
-                            <svg viewBox="0 0 24 24">
-                                <use href="#tick-icon" class="label-icon"></use>
-                            </svg>
+    <div class="label-toolbar-overlay-container" style="display: none;">
+        <div class="label-toolbar-overlay">
+            <div class="label-toolbar">
+
+                <div class="label-group-container template">
+                    <div class="label-group-title">AI Supported Labels</div>
+                    <div class="label-group-content">
+                        <div class="label-toolbar-item place-label template" data-label-type="">
+                            <div class="label-toolbar-item-icon">
+                                <svg viewBox="0 0 24 24">
+                                    <use href="#tick-icon" class="label-icon"></use>
+                                </svg>
+                            </div>
+                            <div class="label-toolbar-item-text"></div>
                         </div>
-                        <div class="label-toolbar-item-text"></div>
                     </div>
+                </div>
+
+                <div class="label-toolbar-item go-back" >
+                    <div class="label-toolbar-item-icon"></div>
+                    <div class="label-toolbar-item-text">Back</div>
+                </div>
+
+                <div class="label-toolbar-item stop-labeling">
+                    <div class="label-toolbar-item-icon"></div>
+                    <div class="label-toolbar-item-text">Done</div>
                 </div>
             </div>
 
-            <div class="label-toolbar-item go-back" >
-                <div class="label-toolbar-item-icon"></div>
-                <div class="label-toolbar-item-text">Back</div>
-            </div>
 
-            <div class="label-toolbar-item stop-labeling">
-                <div class="label-toolbar-item-icon"></div>
-                <div class="label-toolbar-item-text">Done</div>
-            </div>
         </div>
-
-
     </div>
-</div>
 
-<div class="panorama-container">
     <div class="object-boundary template">
         <div class="object-boundary-label">
             <div class="object-boundary-label-text"></div>
@@ -179,7 +180,13 @@
 <%--        <div class="object-boundary-center marker"></div>--%>
     </div>
     <div id="panorama"></div>
-    <div class="marker template"></div>
+    <div class="marker template">
+        <div class="marker-icon-container" style="display: none;">
+            <svg viewBox="0 0 0 0">
+                <use href="#shelter-icon" class="marker-icon"></use>
+            </svg>
+        </div>
+    </div>
     <div class="overlay"></div>
     <div class="mode-indicator"></div>
     <div class="pano-mid-x"></div>
@@ -222,62 +229,62 @@
 <div class="sidebar collapsed">
     <div class="sidebar-title">StreetscapeCV</div>
     <div class="sidebar-content">
-        <div class="sidebar-section mission-location-container">
-            <div class="sidebar-icon mission-location-icon">
-                <svg viewBox="0 0 40 40">
-                    <use href="#location-icon"></use>
-                </svg>
-            </div>
-            <div class="sidebar-section-title mission-location-title">Mission Location</div>
-        </div>
-        <div class="sidebar-section mission-progress-container">
-            <div class="mission-progress-indicator"></div>
-        </div>
-        <div class="sidebar-section mission-information-container">
-            <div class="sidebar-icon mission-information-icon">
-                <svg viewBox="0 0 36 36">
-                    <use href="#info-icon"></use>
-                </svg>
-            </div>
-            <div class="sidebar-section-title mission-information-title">Mission Information</div>
-        </div>
-        <div class="sidebar-section mission-stats-container">
-            <div class="sidebar-icon mission-stats-icon">
-                <svg viewBox="0 0 44 44">
-                    <use href="#stats-icon"></use>
-                </svg>
-            </div>
-            <div class="sidebar-section-title mission-stats-title">Mission Stats</div>
-<%--            <div class="sidebar-section-content mission-stats-content">--%>
-<%--                <div class="mission-stats-item">--%>
-<%--                    <div class="mission-stats-item-title">Total Images</div>--%>
-<%--                    <div class="mission-stats-item-value">0</div>--%>
-<%--                </div>--%>
-<%--                <div class="mission-stats-item">--%>
-<%--                    <div class="mission-stats-item-title">Total Labels</div>--%>
-<%--                    <div class="mission-stats-item-value">0</div>--%>
-<%--                </div>--%>
-<%--                <div class="mission-stats-item">--%>
-<%--                    <div class="mission-stats-item-title">Total Labels Correct</div>--%>
-<%--                    <div class="mission-stats-item-value">0</div>--%>
-<%--                </div>--%>
-<%--                <div class="mission-stats-item">--%>
-<%--                    <div class="mission-stats-item-title">Total Labels Incorrect</div>--%>
-<%--                    <div class="mission-stats-item-value">0</div>--%>
-<%--                </div>--%>
-<%--                <div class="mission-stats-item">--%>
-<%--                    <div class="mission-stats-item-title">Total Labels Skipped</div>--%>
-<%--                    <div class="mission-stats-item-value">0</div>--%>
-<%--                </div>--%>
-        </div>
-        <div class="sidebar-section tips-container">
-            <div class="sidebar-icon tips-icon">
-                <svg viewBox="0 0 53 53">
-                    <use href="#tips-icon"></use>
-                </svg>
-            </div>
-            <div class="sidebar-section-title tips-title">Tips</div>
-        </div>
+<%--        <div class="sidebar-section mission-location-container">--%>
+<%--            <div class="sidebar-icon mission-location-icon">--%>
+<%--                <svg viewBox="0 0 40 40">--%>
+<%--                    <use href="#location-icon"></use>--%>
+<%--                </svg>--%>
+<%--            </div>--%>
+<%--            <div class="sidebar-section-title mission-location-title">Mission Location</div>--%>
+<%--        </div>--%>
+<%--        <div class="sidebar-section mission-progress-container">--%>
+<%--            <div class="mission-progress-indicator"></div>--%>
+<%--        </div>--%>
+<%--        <div class="sidebar-section mission-information-container">--%>
+<%--            <div class="sidebar-icon mission-information-icon">--%>
+<%--                <svg viewBox="0 0 36 36">--%>
+<%--                    <use href="#info-icon"></use>--%>
+<%--                </svg>--%>
+<%--            </div>--%>
+<%--            <div class="sidebar-section-title mission-information-title">Mission Information</div>--%>
+<%--        </div>--%>
+<%--        <div class="sidebar-section mission-stats-container">--%>
+<%--            <div class="sidebar-icon mission-stats-icon">--%>
+<%--                <svg viewBox="0 0 44 44">--%>
+<%--                    <use href="#stats-icon"></use>--%>
+<%--                </svg>--%>
+<%--            </div>--%>
+<%--            <div class="sidebar-section-title mission-stats-title">Mission Stats</div>--%>
+<%--&lt;%&ndash;            <div class="sidebar-section-content mission-stats-content">&ndash;%&gt;--%>
+<%--&lt;%&ndash;                <div class="mission-stats-item">&ndash;%&gt;--%>
+<%--&lt;%&ndash;                    <div class="mission-stats-item-title">Total Images</div>&ndash;%&gt;--%>
+<%--&lt;%&ndash;                    <div class="mission-stats-item-value">0</div>&ndash;%&gt;--%>
+<%--&lt;%&ndash;                </div>&ndash;%&gt;--%>
+<%--&lt;%&ndash;                <div class="mission-stats-item">&ndash;%&gt;--%>
+<%--&lt;%&ndash;                    <div class="mission-stats-item-title">Total Labels</div>&ndash;%&gt;--%>
+<%--&lt;%&ndash;                    <div class="mission-stats-item-value">0</div>&ndash;%&gt;--%>
+<%--&lt;%&ndash;                </div>&ndash;%&gt;--%>
+<%--&lt;%&ndash;                <div class="mission-stats-item">&ndash;%&gt;--%>
+<%--&lt;%&ndash;                    <div class="mission-stats-item-title">Total Labels Correct</div>&ndash;%&gt;--%>
+<%--&lt;%&ndash;                    <div class="mission-stats-item-value">0</div>&ndash;%&gt;--%>
+<%--&lt;%&ndash;                </div>&ndash;%&gt;--%>
+<%--&lt;%&ndash;                <div class="mission-stats-item">&ndash;%&gt;--%>
+<%--&lt;%&ndash;                    <div class="mission-stats-item-title">Total Labels Incorrect</div>&ndash;%&gt;--%>
+<%--&lt;%&ndash;                    <div class="mission-stats-item-value">0</div>&ndash;%&gt;--%>
+<%--&lt;%&ndash;                </div>&ndash;%&gt;--%>
+<%--&lt;%&ndash;                <div class="mission-stats-item">&ndash;%&gt;--%>
+<%--&lt;%&ndash;                    <div class="mission-stats-item-title">Total Labels Skipped</div>&ndash;%&gt;--%>
+<%--&lt;%&ndash;                    <div class="mission-stats-item-value">0</div>&ndash;%&gt;--%>
+<%--&lt;%&ndash;                </div>&ndash;%&gt;--%>
+<%--        </div>--%>
+<%--        <div class="sidebar-section tips-container">--%>
+<%--            <div class="sidebar-icon tips-icon">--%>
+<%--                <svg viewBox="0 0 53 53">--%>
+<%--                    <use href="#tips-icon"></use>--%>
+<%--                </svg>--%>
+<%--            </div>--%>
+<%--            <div class="sidebar-section-title tips-title">Tips</div>--%>
+<%--        </div>--%>
 
         <div class="sidebar-section next-location-button">
             <div class="sidebar-section-title next-location-button-title">Next Stop</div>
@@ -319,14 +326,15 @@
         }(HTMLCanvasElement.prototype.getContext);
 
         // const latLng = "47.6327022,-122.2279419";
-        const latLng = "47.6637776,-122.3008794";
+        // const latLng = "47.6637776,-122.3008794";
         // const latLng = "47.6627831,-122.3008315";
         // const latLng = "47.66853,-122.290514";
         // const latLng = "47.6572767,-122.3046887";
         // const latLng = "47.6539783,-122.3051593";
         // const latLng = "47.6523437,-122.3062897";
-        // const latLng = "47.6557727,-122.3120149";
+        const latLng = "47.6557727,-122.3120149";
         // const latLng = "47.6593773,-122.3119228";
+        // const latLng = "47.6493394226547, -122.30513426461609";
 
         console.log(latLng.split(',')[0] + ' : ' + latLng.split(',')[1]);
 

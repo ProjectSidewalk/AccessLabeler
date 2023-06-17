@@ -48,9 +48,8 @@ $(function() {
 
     let dataIDX = get('idx') ? get('idx') : 0;
 
-    // const worker = new Worker('js/worker.js');
-
     let missionID = 'test-mission-id';
+    const sessionID = get('sessionID') ? get('sessionID') : new Date().getTime().toString(); // Set only once.
 
     var $panorama = $('#panorama'); // TODO: Check if this is available from the start. What happens if it takes time to load?
     const $dummyImageContainer = $('.dummy-image-container');
@@ -62,13 +61,15 @@ $(function() {
 
     const MARKER_DISTANCE_BUFFER = 50;
 
+    const iconsInfo = {}; // This will be initialized by the renderLabels function using labelsDescriptor.
+
 
     // All the label types
     const LABEL_TYPES = {
-        0: 'Seating',
-        1: 'Shelter',
-        2: 'Signage',
-        3: 'Trashcan'
+        0: 'seating',
+        1: 'shelter',
+        2: 'signage',
+        3: 'trashcan'
     }
 
 
@@ -182,13 +183,16 @@ $(function() {
                     const label = labels[i];
                     const $labelButton = $('.label-toolbar-item.place-label.template', $labelToolbarGroup).clone().removeClass('template');
                     $labelButton.attr('data-label-type', label.labelType);
-                    $labelButton.addClass(label.labelType);
+                    $labelButton.addClass(LABEL_TYPES[label.labelType].toLowerCase());
 
                     $('.label-icon', $labelButton).attr('href', label.icon.id);
                     $('svg', $labelButton).attr('viewBox', label.icon.viewBox);
 
                     $('.label-toolbar-item-text', $labelButton).text(label.displayName);
                     $('.label-group-content', $labelToolbarGroup).append($labelButton);
+
+                    // Init the iconsInfo object.
+                    iconsInfo[LABEL_TYPES[label.labelType]] = label;
                 }
 
                 $labelToolbar.append($labelToolbarGroup);
@@ -206,7 +210,9 @@ $(function() {
         const x = e.clientX - $panorama.offset().left;
         const y = e.clientY - $panorama.offset().top;
 
-        placeLabel(null, x, y, labelType, HUMAN_VERIFICATION_STATE.VERIFIED_CORRECT, true, null);
+        const m = placeLabel(null, x, y, labelType, HUMAN_VERIFICATION_STATE.VERIFIED_CORRECT, true, null);
+
+        currentState.verifiedLabels.push(m);
 
         labelStats.nLabelsManuallyPlaced++;
     }
@@ -232,6 +238,13 @@ $(function() {
 
         if (verificationState === HUMAN_VERIFICATION_STATE.NOT_VERIFIED) {
             $marker.addClass('not-verified');
+        }
+
+        // If the marker is placed by the user, we should show the respective icon.
+        if (isHumanPlaced) {
+            $('use', $marker).attr('href', iconsInfo[labelType].icon.id);
+            $('svg', $marker).attr('viewBox', iconsInfo[labelType].icon.viewBox);
+            $('.marker-icon-container', $marker).show();
         }
 
         if (optionalClasses) {
@@ -295,8 +308,8 @@ $(function() {
         }
     }
 
-    function updateCurrentStateLocation(panorama) {
-        currentState.location = panorama.location.latLng.lat() + ',' + panorama.location.latLng.lng();
+    function updateCurrentStateLocation(locationID) {
+        currentState.location = locationID;
     }
 
     /**
@@ -340,6 +353,37 @@ $(function() {
 
         updateStatsUI();
 
+    }
+
+    /**
+     * Creates the log data object and posts it to the server.
+     */
+    function postLogData() {
+        const logData = {
+            'missionID': missionID,
+            'sessionID': sessionID,
+            'missionStats': missionStats,
+            'labelStats': labelStats,
+            'timestamp': new Date().getTime(),
+        };
+
+        const d = {
+            'name': 'log-' + sessionID +'.json',
+            'data': JSON.stringify(logData)
+        }
+
+        $.ajax({
+            type: 'POST',
+            url: 'saveLogs.jsp',
+            data: d,
+            contentType: "application/x-www-form-urlencoded; charset=UTF-8",
+            success: function (data) {
+                console.log('Successfully posted log data to the server.');
+            },
+            error: function (err) {
+                console.log('Error posting log data to the server.');
+            }
+        });
     }
 
     /**
@@ -397,6 +441,8 @@ $(function() {
             missionStats.completedLocations++;
             updateMissionStatsUI();
 
+            // Post the log data to server.
+            postLogData();
 
             if (shouldPickRandomLocation) {
                 dataIDX = getRandomInt (0, GIS_DATA.features.length - 1);
@@ -413,6 +459,7 @@ $(function() {
             }
 
             let location = null;
+            let locationID = null;
 
             // We right now support two sources of data—King County GIS and Overpass Turbo/OSM.
             // And they both have different formats. This block handles it. This is not the best solution but it works for now.
@@ -420,12 +467,17 @@ $(function() {
                 location = [
                     GIS_DATA.features[dataIDX].X,
                     GIS_DATA.features[dataIDX].Y
-                ]
+                ];
+                locationID = GIS_DATA.features[dataIDX].OBJECTID;
             } else {
                 location = GIS_DATA.features[dataIDX].geometry.coordinates; // This currently assumes that the data is available in the Overpass Turbo/OSM format.
+                locationID = GIS_DATA.features[dataIDX].properties['gtfs:stop_id']; // todo: we should check if this is unique.
             }
 
+            const currentPov = panorama.getPov();
+
             panorama.setPosition({lat: location[1], lng: location[0]});
+            panorama.setPov({heading: currentPov.heading, pitch: currentPov.pitch, zoom: 1}); // Always start with zoom 1.
 
             console.log("Index: " + dataIDX);
             console.log("Info: " + JSON.stringify(GIS_DATA.features[dataIDX]));
@@ -433,7 +485,7 @@ $(function() {
             // Reset the current state so the labeling can be started from the beginning.
             resetCurrentState();
 
-            updateCurrentStateLocation(panorama);
+            updateCurrentStateLocation(locationID);
 
         }
 
@@ -481,7 +533,9 @@ $(function() {
             const id = parseInt($closestObjectBoundary.attr('data-id'));
             const marker = updateMarkerVerificationState(id, HUMAN_VERIFICATION_STATE.VERIFIED_CORRECT);
 
-            currentState.verifiedLabels.push(marker);
+            // Add the marker to the current state. We will later log this info.
+            const markerClone = structuredClone(marker); // This is a deep clone using new API. We might have to revisit this for better support.
+            currentState.verifiedLabels.push(markerClone);
 
             updateLabelStats(marker);
         }
@@ -498,42 +552,17 @@ $(function() {
             const id = parseInt($closestObjectBoundary.attr('data-id'));
             const marker = updateMarkerVerificationState(id, HUMAN_VERIFICATION_STATE.VERIFIED_INCORRECT);
 
-            currentState.verifiedLabels.push(marker);
+            // Add the marker to the current state. We will later log this info.
+            const markerClone = structuredClone(marker); // This is a deep clone using new API. We might have to revisit this for better support.
+            currentState.verifiedLabels.push(markerClone);
 
             updateLabelStats(marker);
         }
 
         function doneLabelingHandler() {
 
-            /**
-             * Creates the log data object and posts it to the server.
-             */
-            function postLogData() {
-                const logData = {
-                    'missionID': missionID,
-                    'missionStats': missionStats,
-                    'labelStats': labelStats,
-                    'timestamp': new Date().getTime(),
-                };
-
-                const d = {
-                    'name': 'log-' +logData.timestamp +'.txt',
-                    'data': JSON.stringify(logData)
-                }
-
-                $.ajax({
-                    type: 'POST',
-                    url: 'saveLogs.jsp',
-                    data: d,
-                    contentType: "application/x-www-form-urlencoded; charset=UTF-8",
-                    success: function (data) {
-                        console.log('Successfully posted log data to the server.');
-                    },
-                    error: function (err) {
-                        console.log('Error posting log data to the server.');
-                    }
-                });
-            }
+            // Update label stats.
+            labelStats.locationToVerifiedLabels[currentState.location] = currentState.verifiedLabels;
 
             // Update the stats and relevant UI one last time.
             missionStats.completedLocations++;
@@ -612,7 +641,7 @@ $(function() {
         $panoramaContainer.on('click', function(e) {
 
             if (isMarking) {
-                placeLabelHandler(e, currentLabelType);
+                placeLabelHandler(e, LABEL_TYPES[currentLabelType]);
             } else {
                 moveMarkers();
             }
@@ -622,6 +651,18 @@ $(function() {
         // panorama object is initialized in JSP.
         panorama.addListener("pov_changed", () => {
             $('.object-boundary:not(.template)').remove();
+
+            // if (Number.isInteger(panorama.getPov().zoom)) {
+            //     updateDummyImageFromGSV();
+            // }
+        });
+
+        // If the user takes steps, then we should reset the markers and currentState.
+        panorama.addListener("position_changed", () => {
+
+            resetCurrentState();
+
+            // updateDummyImageFromGSV();
         });
     }
 
@@ -667,11 +708,11 @@ $(function() {
 
                 const m = currentState.markers[j];
 
-                if (m.labelType === label) {
+                if (m.labelType === LABEL_TYPES[label]) {
 
                     const delta = Math.sqrt(Math.pow(centerX - m.left, 2) + Math.pow(centerY - m.top, 2));
 
-                    if (delta < MARKER_DISTANCE_BUFFER && label === m.labelType && m.verificationState !== HUMAN_VERIFICATION_STATE.NOT_VERIFIED) {
+                    if (delta < MARKER_DISTANCE_BUFFER && m.verificationState !== HUMAN_VERIFICATION_STATE.NOT_VERIFIED) {
 
                         console.log('Delta: ' + delta);
 
@@ -707,8 +748,10 @@ $(function() {
             }
 
             // Place a dummy label in the center of the box. We will use this to determine if the user has already verified this object.
-            const marker = placeLabel(existingMarker ? existingMarker.id : null, (scaledX + (scaledW/2)), (scaledY + (scaledH/2)), label, HUMAN_VERIFICATION_STATE.NOT_VERIFIED, false,'cv-suggested');
+            const marker = placeLabel(existingMarker ? existingMarker.id : null, centerX, centerY, LABEL_TYPES[label], HUMAN_VERIFICATION_STATE.NOT_VERIFIED, false,'cv-suggested');
             $b.attr('data-id', marker.id);
+
+            marker.originalBoundingBox = [scaledX, scaledY, scaledW, scaledH];
         }
     }
 
