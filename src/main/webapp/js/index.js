@@ -64,6 +64,9 @@ $(function() {
     const iconsInfo = {}; // This will be initialized by the renderLabels function using labelsDescriptor.
 
 
+    const DEBUG_MODE = get('debug') === '1';
+
+
     // All the label types
     const LABEL_TYPES = {
         0: 'seating',
@@ -210,14 +213,35 @@ $(function() {
         const x = e.clientX - $panorama.offset().left;
         const y = e.clientY - $panorama.offset().top;
 
-        const m = placeLabel(null, x, y, labelType, HUMAN_VERIFICATION_STATE.VERIFIED_CORRECT, true, null);
+        const m = placeMarker(null, x, y, labelType, HUMAN_VERIFICATION_STATE.VERIFIED_CORRECT, true, null);
 
         currentState.verifiedLabels.push(m);
 
         labelStats.nLabelsManuallyPlaced++;
     }
 
-    function placeLabel(optionalID, x, y, labelType, verificationState, isHumanPlaced, optionalClasses) {
+    // Removes the marker from the DOM and the currentState.markers array.
+    function removeMarkerIfExists(markerID) {
+
+        let result = null;
+
+        $('.marker[data-id=' + markerID + ']').remove();
+        for (let i = 0; i < currentState.markers.length; i++) {
+            if (currentState.markers[i].id === markerID) {
+                result = currentState.markers.splice(i, 1);
+
+                if (DEBUG_MODE) {
+                    console.log('Removed marker with ID: ' + markerID);
+                }
+
+                return result[0]; // Splice returns an array. We should return only the marker, which is the only element in the array.
+            }
+        }
+
+        return result;
+    }
+
+    function placeMarker(optionalID, x, y, labelType, verificationState, isHumanPlaced, optionalClasses) {
 
         const pov = panorama.getPov();
         const position = getPosition(x, y, $panorama.width(), $panorama.height(), pov.zoom, pov.heading, pov.pitch);
@@ -681,12 +705,14 @@ $(function() {
     const iouThreshold = 0.45;
     const scoreThreshold = 0.2;
 
-    function renderBoxes(boxes) {
+    function renderBoxes(predictedBoxes) {
 
+        // We are going to re-render all the boxes. So, let's remove all the existing ones.
         $('.object-boundary:not(.template)').remove();
 
-        for (let i = 0; i < boxes.length; i++) {
-            const box = boxes[i];
+        // Go through all the boxes and render them.
+        for (let i = 0; i < predictedBoxes.length; i++) {
+            const box = predictedBoxes[i];
             const [x, y, w, h] = box.bounding;
             const label = box.label;
             const probability = box.probability;
@@ -700,10 +726,11 @@ $(function() {
             const centerY = scaledY + (scaledH/2);
 
 
-            // Let's see if this was already detected by CV.
-            let existingMarker = null;
+            let closestMarker = null;
 
-            // Check if this is an object we've already verified
+            // First let's go through all the markers and compute the distance between center of the box and all the 'translated' old markers of the same label type.
+            // We find the closest marker and if it is within a certain distance, we consider it as the existing marker.
+            // Note: we can't blindly compare with a distance as another marker of the same label type might be under the threshold but may not be the closest one and appear first in the array.
             for (let j = 0; j < currentState.markers.length; j++) {
 
                 const m = currentState.markers[j];
@@ -712,44 +739,54 @@ $(function() {
 
                     const delta = Math.sqrt(Math.pow(centerX - m.left, 2) + Math.pow(centerY - m.top, 2));
 
-                    if (delta < MARKER_DISTANCE_BUFFER && m.verificationState !== HUMAN_VERIFICATION_STATE.NOT_VERIFIED) {
-
-                        console.log('Delta: ' + delta);
-
-                        existingMarker = m;
-                        break;
+                    // This is how we find the closest marker.
+                    if (!closestMarker || delta < closestMarker.delta) {
+                        closestMarker = {
+                            marker: m,
+                            delta: delta
+                        }
                     }
                 }
             }
 
-            const $b = $('.object-boundary.template').clone().removeClass('template').addClass('object-' + i);
+            // If the closest marker is within the threshold, then we consider it as the existing marker.
+            let existingMarker = closestMarker && closestMarker.delta < MARKER_DISTANCE_BUFFER ? closestMarker.marker : null;
 
-            $b.css({
+            const $objectBoundary = $('.object-boundary.template').clone().removeClass('template').addClass('object-' + i);
+
+            $objectBoundary.css({
                 left: scaledX,
                 top: scaledY,
                 width: scaledW,
                 height: scaledH
             });
 
-            $b.addClass('label-' + label);
+            $objectBoundary.addClass('label-' + label);
 
-            $b.attr('title', 'Confidence: ' + probability);
+            // Showing the confidence level as a tooltip.
+            const formattedProbablity = Math.round(probability * 100) + '%';
+            $objectBoundary.attr('title', 'Confidence: ' + formattedProbablity);
 
-            $panoramaContainer.append($b);
+            $panoramaContainer.append($objectBoundary);
 
-            $('.object-boundary-label-text', $b).text(LABEL_TYPES[label]);
+            $('.object-boundary-label-text', $objectBoundary).text(LABEL_TYPES[label]);
 
+            // Restore the state if it is an existing marker.
             if (existingMarker) {
                 if (existingMarker.verificationState === HUMAN_VERIFICATION_STATE.VERIFIED_CORRECT) {
-                    $b.addClass('confirmed');
+                    $objectBoundary.addClass('confirmed');
                 } else if (existingMarker.verificationState === HUMAN_VERIFICATION_STATE.VERIFIED_INCORRECT) {
-                    $b.addClass('denied');
+                    $objectBoundary.addClass('denied');
                 }
+
+                // Since a marker with this ID already exists, we should remove it before placing a new one with the same id.
+                // Note: this function will return null if the marker was not found.
+                existingMarker = removeMarkerIfExists(existingMarker.id);
             }
 
             // Place a dummy label in the center of the box. We will use this to determine if the user has already verified this object.
-            const marker = placeLabel(existingMarker ? existingMarker.id : null, centerX, centerY, LABEL_TYPES[label], HUMAN_VERIFICATION_STATE.NOT_VERIFIED, false,'cv-suggested');
-            $b.attr('data-id', marker.id);
+            const marker = placeMarker(existingMarker ? existingMarker.id : null, centerX, centerY, LABEL_TYPES[label], existingMarker ? existingMarker.verificationState : HUMAN_VERIFICATION_STATE.NOT_VERIFIED, false,'cv-suggested');
+            $objectBoundary.attr('data-id', marker.id);
 
             marker.originalBoundingBox = [scaledX, scaledY, scaledW, scaledH];
         }
@@ -825,7 +862,8 @@ $(function() {
         const { output0 } = await session.run({ images: tensor }); // run session and get output layer
         const { selected } = await nms.run({ detection: output0, config: config }); // perform nms and filter boxes
 
-        console.log(selected);
+        if (DEBUG_MODE)
+            console.log(selected);
 
         const boxes = [];
 
