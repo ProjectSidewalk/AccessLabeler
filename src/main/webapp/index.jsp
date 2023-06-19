@@ -347,9 +347,6 @@
             }, function () {
                 panorama.setPov(panorama.getPhotographerPov());
             });
-
-
-
     }
 </script>
 <script async defer

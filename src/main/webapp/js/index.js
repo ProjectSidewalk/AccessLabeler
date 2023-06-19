@@ -13,7 +13,7 @@ class Marker {
      * @param top
      * @param verificationState
      */
-    constructor(id, type, heading, pitch, x, y, left, top, verificationState, isHumanPlaced) {
+    constructor(id, type, heading, pitch, x, y, left, top, verificationState, isHumanPlaced, confidence) {
         this.id = id;
         this.labelType = type;
         this.heading = heading;
@@ -24,6 +24,7 @@ class Marker {
         this.top = top;
         this.verificationState = verificationState;
         this.isHumanPlaced = isHumanPlaced;
+        this.confidence = confidence;
     }
 }
 
@@ -134,14 +135,17 @@ $(function() {
     }
 
 
+    // Saves a screenshot of the GSV on the server with the name gsv-<panoID>-<timestamp>.jpg.
     function saveGSVScreenshot() {
 
         const $dummyImageContainer = $('.dummy-image-container');
 
         html2canvas($dummyImageContainer[0]).then(canvas => {
 
+            // Saves a screenshot of the GSV to the server with the name gsv-<panoID>-<timestamp>.jpg
+            // Pano ID will help us trace back to the panorama if needed.
             const d = {
-                'name': 'label-' + new Date().getTime() +'.jpg',
+                'name': 'gsv-' + panorama.getPano() + '-' + new Date().getTime() +'.jpg',
                 'b64': canvas.toDataURL('image/jpeg', 0.8)
             }
             $.ajax({
@@ -213,7 +217,9 @@ $(function() {
         const x = e.clientX - $panorama.offset().left;
         const y = e.clientY - $panorama.offset().top;
 
-        const m = placeMarker(null, x, y, labelType, HUMAN_VERIFICATION_STATE.VERIFIED_CORRECT, true, null);
+        const m = placeMarker(null, x, y, labelType, HUMAN_VERIFICATION_STATE.VERIFIED_CORRECT, true, 1, null);
+
+        $('.stop-labeling').click(); // Automatically stop labeling after placing a label
 
         currentState.verifiedLabels.push(m);
 
@@ -241,7 +247,20 @@ $(function() {
         return result;
     }
 
-    function placeMarker(optionalID, x, y, labelType, verificationState, isHumanPlaced, optionalClasses) {
+    /**
+     * Important function that places a marker at the given coordinates.
+     * Adds the marker to the UI and currentState.markers array.
+     * Note: this doesn't remove the marker if it already exists. Use removeMarkerIfExists() for that.
+     * @param optionalID ID for the marker. If not provided, it will be auto-generated.
+     * @param x X coordinate of the marker in the current GSV window.
+     * @param y Y coordinate of the marker in the current GSV window.
+     * @param labelType The type of the label. See LABEL_TYPES.
+     * @param verificationState The verification state of the label. See HUMAN_VERIFICATION_STATE.
+     * @param isHumanPlaced Whether the label was placed by a human or suggested by CV.
+     * @param optionalClasses Optional classes to add to the marker.
+     * @returns {Marker} The placed marker object.
+     */
+    function placeMarker(optionalID, x, y, labelType, verificationState, isHumanPlaced, confidence, optionalClasses) {
 
         const pov = panorama.getPov();
         const position = getPosition(x, y, $panorama.width(), $panorama.height(), pov.zoom, pov.heading, pov.pitch);
@@ -278,14 +297,12 @@ $(function() {
         $panoramaContainer.append($marker);
 
         // verification state here could be VERIFIED_CORRECT or NOT_VERIFIED.
-        const m = new Marker(optionalID ? optionalID : currentState.markerID, labelType, pov.heading, pov.pitch, x, y, newCoords.left, newCoords.top, verificationState, isHumanPlaced);
+        const m = new Marker(optionalID ? optionalID : currentState.markerID, labelType, pov.heading, pov.pitch, x, y, newCoords.left, newCoords.top, verificationState, isHumanPlaced, );
         currentState.markers.push(m);
 
         if (!optionalID) {
             currentState.markerID++;
         }
-
-        $('.stop-labeling').click(); // Automatically stop labeling after placing a label
 
         return m;
 
@@ -692,13 +709,13 @@ $(function() {
 
     let prevZoom = 1;
 
-    panorama.addListener('pov_changed', function () {
-        const newZoom = panorama.getPov().zoom;
-        if (Number.isInteger(newZoom) && prevZoom !== panorama.getPov().zoom) {
-            prevZoom = panorama.getPov().zoom;
-            setTimeout(updateDummyImageFromGSV, 20);
-        }
-    });
+    // panorama.addListener('pov_changed', function () {
+    //     const newZoom = panorama.getPov().zoom;
+    //     if (Number.isInteger(newZoom) && prevZoom !== panorama.getPov().zoom) {
+    //         prevZoom = panorama.getPov().zoom;
+    //         setTimeout(updateDummyImageFromGSV, 20);
+    //     }
+    // });
 
     const inputShape = [1, 3, 640, 640];
     const topk = 100;
@@ -715,7 +732,7 @@ $(function() {
             const box = predictedBoxes[i];
             const [x, y, w, h] = box.bounding;
             const label = box.label;
-            const probability = box.probability;
+            const probability = box.probability.toFixed(2); // We are interested in only 2 decimal places.
 
             const scaledX = x * GSVScaleX;
             const scaledY = y * GSVScaleY;
@@ -752,7 +769,7 @@ $(function() {
             // If the closest marker is within the threshold, then we consider it as the existing marker.
             let existingMarker = closestMarker && closestMarker.delta < MARKER_DISTANCE_BUFFER ? closestMarker.marker : null;
 
-            const $objectBoundary = $('.object-boundary.template').clone().removeClass('template').addClass('object-' + i);
+            const $objectBoundary = $('.object-boundary.template').clone().removeClass('template').addClass('object-boundary-' + LABEL_TYPES[label]);
 
             $objectBoundary.css({
                 left: scaledX,
@@ -760,8 +777,6 @@ $(function() {
                 width: scaledW,
                 height: scaledH
             });
-
-            $objectBoundary.addClass('label-' + label);
 
             // Showing the confidence level as a tooltip.
             const formattedProbablity = Math.round(probability * 100) + '%';
@@ -785,7 +800,7 @@ $(function() {
             }
 
             // Place a dummy label in the center of the box. We will use this to determine if the user has already verified this object.
-            const marker = placeMarker(existingMarker ? existingMarker.id : null, centerX, centerY, LABEL_TYPES[label], existingMarker ? existingMarker.verificationState : HUMAN_VERIFICATION_STATE.NOT_VERIFIED, false,'cv-suggested');
+            const marker = placeMarker(existingMarker ? existingMarker.id : null, centerX, centerY, LABEL_TYPES[label], existingMarker ? existingMarker.verificationState : HUMAN_VERIFICATION_STATE.NOT_VERIFIED, false, probability, 'cv-suggested');
             $objectBoundary.attr('data-id', marker.id);
 
             marker.originalBoundingBox = [scaledX, scaledY, scaledW, scaledH];
