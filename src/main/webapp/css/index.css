@@ -97,21 +97,21 @@ body {
 
 .label-toolbar-item-icon { width: 40px; height: 40px; }
 
-.label-toolbar-item.shelter { background: rgba(144, 195, 31, 0.75); }
-.label-toolbar-item.signage { background: rgba(99, 192, 171, 0.75); }
-.label-toolbar-item.seating { background: rgba(120, 176, 234, 0.75); }
-.label-toolbar-item.trashcan { background: rgba(255, 132, 47, 0.75); }
+.label-toolbar-item.shelter { background: rgba(250, 191, 28, 0.75); }
+.label-toolbar-item.signage { background: rgba(238, 114, 78, 0.75); }
+.label-toolbar-item.seating { background: rgba(98, 175, 255, 0.75); }
+.label-toolbar-item.trashcan { background: rgba(240, 122, 188, 0.75); }
 
-.label-toolbar-item.shelter:hover { background: rgba(144, 195, 31); }
-.label-toolbar-item.signage:hover { background: rgba(99, 192, 171); }
-.label-toolbar-item.seating:hover { background: rgba(120, 176, 234); }
-.label-toolbar-item.trashcan:hover { background: rgba(255, 132, 47); }
+.label-toolbar-item.shelter:hover { background: #FABF1C; }
+.label-toolbar-item.signage:hover { background: #EE724E; }
+.label-toolbar-item.seating:hover { background: #62AFFF; }
+.label-toolbar-item.trashcan:hover { background: #F07ABC; }
 
 
-.marker-shelter { background: rgba(144, 195, 31, 0.9); }
-.marker-signage { background: rgba(99, 192, 171, 0.9); }
-.marker-seating { background: rgba(120, 176, 234, 0.9); }
-.marker-trashcan { background: rgba(255, 132, 47, 0.9); }
+.marker-shelter { background: rgba(250, 191, 28, 0.9); }
+.marker-signage { background: rgba(238, 114, 78, 0.9); }
+.marker-seating { background: rgba(98, 175, 255, 0.9); }
+.marker-trashcan { background: rgba(240, 122, 188, 0.9); }
 
 
 .stop-labeling { border: 3px solid green; margin-left: 20px; }
@@ -127,7 +127,7 @@ body {
 /*.box { position: absolute; background: rgba(255, 200, 0, 0.15); z-index: 1; }*/
 /*.box.bench { background: rgba(220, 20, 60, 0.35); border: 2px solid crimson; }*/
 
-.object-boundary { z-index: 10; border-radius: 3px; position: absolute; pointer-events: none; outline: transparent dashed 2px; transition: outline-color 0.2s; opacity: 0.7; }
+.object-boundary { z-index: 10; border-radius: 3px; position: absolute; pointer-events: none; outline: yellow dashed 2.5px; transition: outline-color 0.2s; opacity: 0.7; filter: drop-shadow(4px 4px 20px #000000); }
 .object-boundary:hover { opacity: 1; z-index: 11; /* Higher z-index upon hover so that overlapping elements can be clicked upon. */ }
 
 /*.object-boundary-center { position: absolute; height: 10px; width: 10px; background: red; border-radius: 100px; }*/
@@ -135,15 +135,18 @@ body {
 .object-boundary-correct, .object-boundary-incorrect { display: flex; margin: 0; width: 30px; cursor: pointer; }
 .object-boundary-label { width: 150px; pointer-events: all; display: flex; }
 .object-boundary-label-text { display: flex; margin-right: 10px; align-items: center; margin-left: 6px; cursor: pointer; text-transform: capitalize; }
-.object-boundary.label-0 { outline-color: yellow; background: rgba(144, 195, 31, 0.1); }
-.object-boundary.label-1 { outline-color: yellow; background: rgba(99, 192, 171, 0.1); }
-.object-boundary.label-2 { outline-color: yellow; background: rgba(120, 176, 234, 0.1); }
 
 .object-boundary .object-boundary-label { width: fit-content; padding: 4px; position: absolute; top: -45px; left: 50%; transform: translateX(-50%); color: black; border-radius: 100px; font-size: 12px; font-weight: bold; }
 
-.object-boundary.label-0 .object-boundary-label { background: #78B0EA; }
-.object-boundary.label-1 .object-boundary-label { background: #90C31F; }
-.object-boundary.label-2 .object-boundary-label { background: #63C0AB; }
+.object-boundary.object-boundary-shelter { outline-color: #FABF1C; }
+.object-boundary.object-boundary-signage { outline-color: #EE724E; }
+.object-boundary.object-boundary-seating { outline-color: #62AFFF; }
+.object-boundary.object-boundary-trashcan { outline-color: #F07ABC; }
+
+.object-boundary.object-boundary-seating .object-boundary-label { background: #62AFFF; }
+.object-boundary.object-boundary-shelter .object-boundary-label { background: #FABF1C; }
+.object-boundary.object-boundary-signage .object-boundary-label { background: #EE724E; }
+.object-boundary.object-boundary-trashcan .object-boundary-label { background: #F07ABC; }
 
 .object-boundary-label-icon { fill: white; }
 
