@@ -47,7 +47,7 @@ $(function() {
     let startTime = null;
     let endTime = null;
 
-    let dataIDX = get('idx') ? get('idx') : 0;
+    let dataIDX = get('idx') ? parseInt(get('idx')) : -1;
 
     let missionID = 'test-mission-id';
     const sessionID = get('sessionID') ? get('sessionID') : new Date().getTime().toString(); // Set only once.
