@@ -197,7 +197,12 @@
 </div>
 
 <div class="dummy-image-container" style="position: absolute; overflow: hidden; pointer-events: none; z-index: -1;">
-    <img src="" width="100%" height="100%" class="dummy-image" style="top: 0; left: 0;">
+    <div class="dummy-image-container-high-res">
+        <img src="" width="100%" height="100%" class="dummy-image-high-res" style="top: 0; left: 0;">
+    </div>
+    <div class="dummy-image-container-low-res">
+        <img src="" width="100%" height="100%" class="dummy-image-low-res" style="top: 0; left: 0;">
+    </div>
     <div class="dummy-marker template"></div>
 </div>
 

@@ -131,28 +131,31 @@ $(function() {
             return image;
         })($('.widget-scene-canvas')[0]);
 
-        $('.dummy-image').attr('src', webglImage.src);
+        $('.dummy-image-high-res').attr('src', webglImage.src);
+        $('.dummy-image-low-res').attr('src', webglImage.src);
     }
 
 
     // Saves a screenshot of the GSV on the server with the name gsv-<panoID>-<timestamp>.jpg.
     function saveGSVScreenshot() {
 
-        const $dummyImageContainer = $('.dummy-image-container');
-
         $panoramaContainer.css('outline', '10px solid goldenrod');
         setTimeout(function() {
             $panoramaContainer.css('outline', 'none');
         }, 800);
 
-        html2canvas($dummyImageContainer[0]).then(canvas => {
+        // Saves a screenshot of the GSV to the server with the name gsv-<panoID>-<timestamp>.jpg
+        // Pano ID will help us trace back to the panorama if needed.
+        const d = {
+            'name': 'gsv-' + panorama.getPano() + '-' + new Date().getTime() +'.jpg',
+        }
 
-            // Saves a screenshot of the GSV to the server with the name gsv-<panoID>-<timestamp>.jpg
-            // Pano ID will help us trace back to the panorama if needed.
-            const d = {
-                'name': 'gsv-' + panorama.getPano() + '-' + new Date().getTime() +'.jpg',
-                'b64': canvas.toDataURL('image/jpeg', 1)
-            }
+        // Save a high-res version of the image.
+        html2canvas($('.dummy-image-container-high-res')[0]).then(canvas => {
+
+            d.dir = 'high-res';
+            d.b64 = canvas.toDataURL('image/jpeg', 1);
+
             $.ajax({
                 type: "POST",
                 url: "saveImage.jsp",
@@ -163,6 +166,25 @@ $(function() {
                 }
             });
         });
+
+
+        // Save a low-res version of the image.
+        html2canvas($('.dummy-image-container-low-res')[0]).then(canvas => {
+
+            d.dir = 'low-res';
+            d.b64 = canvas.toDataURL('image/jpeg', 1);
+
+            $.ajax({
+                type: "POST",
+                url: "saveImage.jsp",
+                data: d,
+                contentType: "application/x-www-form-urlencoded; charset=UTF-8",
+                success: function(data){
+                    console.log(data);
+                }
+            });
+        });
+
     }
 
 
@@ -547,8 +569,6 @@ $(function() {
         function toggleSidebarHandler() {
             const $sidebar = $('.sidebar');
 
-            const $dummyImageContainer = $('.dummy-image-container');
-
             let sidebarRight = 0;
             let panoWidth = '70%';
 
@@ -653,7 +673,7 @@ $(function() {
 
 
         // Very important handler to infer objects in the view and show them to the user.
-        $('.dummy-image').on('load', analyzeImageAndShowSuggestions);
+        $('.dummy-image-high-res').on('load', analyzeImageAndShowSuggestions);
 
 
         $(document).on('keypress', function(e) {
@@ -872,7 +892,7 @@ $(function() {
 
         startTime = new Date().getTime();
 
-        const image = $('.dummy-image')[0];
+        const image = $('.dummy-image-high-res')[0];
 
         const [modelWidth, modelHeight] = inputShape.slice(2);
         const [input, xRatio, yRatio] = preprocessing(image, modelWidth, modelHeight);

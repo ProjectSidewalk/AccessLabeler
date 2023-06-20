@@ -73,6 +73,9 @@ body {
 
 .dummy-image-container { overflow: hidden; height: 0; width: 0; /* height and width will get adjusted later. */}
 
+.dummy-image-container-high-res { height: 100%; width: 100%; }
+.dummy-image-container-low-res { height: 50%; width: 50%; }
+
 .dummy-marker { position: absolute; height: 30px; width: 30px; background: red; border-radius: 50%; transform: translate(-50%, -50%); }
 
 .overlay { position: absolute; height: 100%; width: 100%; top: 0; left: 0; z-index: 2; pointer-events: none; }
