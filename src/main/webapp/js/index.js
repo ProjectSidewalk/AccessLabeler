@@ -433,6 +433,7 @@ $(function() {
             'missionStats': missionStats,
             'labelStats': labelStats,
             'timestamp': new Date().getTime(),
+            'dataIDX': dataIDX      // Logging to manage in case of a crash. We might not be able to take all the screenshots in one go.
         };
 
         const d = {
