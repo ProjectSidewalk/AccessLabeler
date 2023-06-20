@@ -455,6 +455,28 @@ $(function() {
         });
     }
 
+    function getLocationFromIdx(data, idx) {
+
+        const result = {
+            'location': null,
+            'locationID': null
+        }
+        // We right now support two sources of data—King County GIS and Overpass Turbo/OSM.
+        // And they both have different formats. This block handles it. This is not the best solution but it works for now.
+        if (data.source === 'KCGIS') {
+            result.location = [
+                data.features[idx].X,
+                data.features[idx].Y
+            ];
+            result.locationID = data.features[idx].OBJECTID;
+        } else {
+            result.location = data.features[idx].geometry.coordinates; // This currently assumes that the data is available in the Overpass Turbo/OSM format.
+            result.locationID = data.features[idx].properties['gtfs:stop_id']; // todo: we should check if this is unique.
+        }
+
+        return result;
+    }
+
     /**
      * Sets up the event handlers for all the UI elements. This is called only once when the page is loaded.
      */
@@ -527,25 +549,13 @@ $(function() {
                 return;
             }
 
-            let location = null;
-            let locationID = null;
-
-            // We right now support two sources of data—King County GIS and Overpass Turbo/OSM.
-            // And they both have different formats. This block handles it. This is not the best solution but it works for now.
-            if (GIS_DATA.source === 'KCGIS') {
-                location = [
-                    GIS_DATA.features[dataIDX].X,
-                    GIS_DATA.features[dataIDX].Y
-                ];
-                locationID = GIS_DATA.features[dataIDX].OBJECTID;
-            } else {
-                location = GIS_DATA.features[dataIDX].geometry.coordinates; // This currently assumes that the data is available in the Overpass Turbo/OSM format.
-                locationID = GIS_DATA.features[dataIDX].properties['gtfs:stop_id']; // todo: we should check if this is unique.
-            }
-
-            const currentPov = panorama.getPov();
+            const locationInfo = getLocationFromIdx(GIS_DATA, dataIDX);
+            let location = locationInfo.location;
+            let locationID = locationInfo.locationID;
 
             panorama.setPosition({lat: location[1], lng: location[0]});
+
+            const currentPov = panorama.getPov();
             panorama.setPov({heading: currentPov.heading, pitch: currentPov.pitch, zoom: 1}); // Always start with zoom 1.
 
             console.log("Index: " + dataIDX);
@@ -956,6 +966,17 @@ $(function() {
         // Init the currentState object.
         resetCurrentState();
         // updateCurrentStateLocation(panorama);
+
+        // If the user has provided a idx, init the panorama to that location.
+        if (dataIDX > -1) {
+
+            const locationInfo = getLocationFromIdx(GIS_DATA, dataIDX);
+            let location = locationInfo.location;
+            let locationID = locationInfo.locationID;
+            updateCurrentStateLocation(locationID);
+
+            panorama.setPosition({lat: location[1], lng: location[0]});
+        }
     }
 
     init();
