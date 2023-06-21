@@ -147,7 +147,7 @@ $(function() {
         // Saves a screenshot of the GSV to the server with the name gsv-<panoID>-<timestamp>.jpg
         // Pano ID will help us trace back to the panorama if needed.
         const d = {
-            'name': 'gsv-' + panorama.getPano() + '-' + new Date().getTime() +'.jpg',
+            'name': 'gsv-' + currentState.location + '-' + panorama.getPano() + '-' + new Date().getTime() +'.jpg',
         }
 
         // Save a high-res version of the image.
