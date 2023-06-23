@@ -104,7 +104,7 @@ $(function() {
     // Captures the data and state at a particular location.
     // All of these should be reset when the user moves to a new location.
     const currentState = {
-        location: '',       // lat, lng string.
+        location: '',       // todo: update
         markers: [],        // all markers including the non verified ones.
         markerID : 0,       // tracks the ID of the next marker to be placed. gets reset when moved to a new location.
         verifiedLabels: [], // only verified labels.
