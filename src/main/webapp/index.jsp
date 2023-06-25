@@ -201,6 +201,12 @@
     <div class="dummy-marker template"></div>
 </div>
 
+<div class="mini-label-icon-for-cursor">
+    <svg viewBox="0 0 24 24">
+        <use href="#tick-icon" class="mini-label-icon"></use>
+    </svg>
+</div>
+
 <%--<img src="sv.jpg" width="100%" style="z-index: 100;" class="abcd">--%>
 
 <div class="mission-stats-panel-container">

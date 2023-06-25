@@ -42,6 +42,8 @@ $(function() {
 
     let isMarking = false;
 
+    let showMiniLabelUnderCursor = false;
+
     let currentLabelType = null;
 
     let startTime = null;
@@ -55,6 +57,8 @@ $(function() {
     var $panorama = $('#panorama'); // TODO: Check if this is available from the start. What happens if it takes time to load?
     const $dummyImageContainer = $('.dummy-image-container');
     const $panoramaContainer = $('.panorama-container'); // This element is included in the HTML and should be available from the start.
+
+    const $miniLabel = $('.mini-label-icon-for-cursor');
 
     let GSVScaleX = $panoramaContainer.width()/640;
     let GSVScaleY = $panoramaContainer.height()/640;
@@ -444,6 +448,8 @@ $(function() {
 
             $('.overlay').css({'pointer-events': 'all'});
             $('.mode-indicator').fadeIn(200);
+
+            showCurrentLabelUnderCursor(e);
         }
 
         function stopLabelingHandler(e) {
@@ -456,6 +462,8 @@ $(function() {
 
             $('.overlay').css({'pointer-events': 'none'});
             $('.mode-indicator').fadeOut(200);
+
+            hideCurrentLabelUnderCursor();
         }
 
         function showLabelsHandler() {
@@ -617,6 +625,41 @@ $(function() {
             $('.mission-stats-panel-container').addClass('focus');
         }
 
+        function moveMiniLabelUnderCursor(e) {
+
+            if (!showMiniLabelUnderCursor) {
+                return;
+            }
+
+            e.preventDefault();
+
+            $miniLabel.css({'left': e.clientX - ($miniLabel.width()/2), 'top': e.clientY - ($miniLabel.height()/2)});
+        }
+
+
+        // We show the current label with the cursor when the user is marking.
+        function showCurrentLabelUnderCursor(e) {
+
+            e.preventDefault();
+
+            $('use', $miniLabel).attr('href', iconsInfo[LABEL_TYPES[currentLabelType]].icon.id);
+            $('svg', $miniLabel).attr('viewBox', iconsInfo[LABEL_TYPES[currentLabelType]].icon.viewBox);
+
+            $miniLabel.addClass(LABEL_TYPES[currentLabelType]);
+
+            showMiniLabelUnderCursor = true;
+
+            $miniLabel.css({'left': e.clientX - ($miniLabel.width()/2), 'top': e.clientY - ($miniLabel.height()/2), 'display': 'flex'});
+        }
+
+        function hideCurrentLabelUnderCursor() {
+
+            $miniLabel.removeClass(LABEL_TYPES[currentLabelType]); // We can remove only the currentLabelType as it changes only when the user clicks on a label type again.
+
+            $miniLabel.hide();
+            showMiniLabelUnderCursor = false;
+        }
+
         $('.next-location-button').click(function() {
             nextLocationHandler(false);
         });
@@ -673,9 +716,13 @@ $(function() {
         })
 
 
-        $(document).on('mousemove', function () {
+        $(document).on('mousemove', function (e) {
             if (!isMarking && isMouseDown) {
                 moveMarkers();
+            }
+
+            if (isMarking) {
+                moveMiniLabelUnderCursor(e);
             }
         });
 
