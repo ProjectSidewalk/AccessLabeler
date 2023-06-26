@@ -649,7 +649,8 @@ $(function() {
 
             showMiniLabelUnderCursor = true;
 
-            $miniLabel.css({'left': e.clientX - ($miniLabel.width()/2), 'top': e.clientY - ($miniLabel.height()/2), 'display': 'flex'});
+            moveMiniLabelUnderCursor(e);
+            $miniLabel.css('display', 'flex');
         }
 
         function hideCurrentLabelUnderCursor() {

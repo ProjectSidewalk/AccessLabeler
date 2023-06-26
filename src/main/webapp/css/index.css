@@ -7,7 +7,7 @@ body {
     bottom: 0;
     left: 0;
     height: calc(100vh);
-    width: calc(100vw - 120px);
+    width: calc(100vw);
     transition: all 0.1s;
     overflow: hidden;
 }
@@ -106,6 +106,11 @@ body {
 .label-toolbar-item.seating:hover { background: #62AFFF; }
 .label-toolbar-item.trashcan:hover { background: #F07ABC; }
 
+.label-toolbar-item.next-location-button { border: none; order: 1; /* This should be always in the end. */ }
+.label-toolbar-item.next-location-button svg { fill: grey; transition: all 0.2s ease-in-out; }
+.label-toolbar-item.next-location-button:hover { background: initial; }
+.label-toolbar-item.next-location-button:hover svg { fill: black; }
+
 
 .marker-shelter { background: rgba(250, 191, 28, 0.9); }
 .marker-signage { background: rgba(238, 114, 78, 0.9); }
@@ -126,26 +131,26 @@ body {
 /*.box { position: absolute; background: rgba(255, 200, 0, 0.15); z-index: 1; }*/
 /*.box.bench { background: rgba(220, 20, 60, 0.35); border: 2px solid crimson; }*/
 
-.object-boundary { z-index: 10; border-radius: 3px; position: absolute; pointer-events: none; outline: yellow dashed 2.5px; transition: outline-color 0.2s; opacity: 0.7; filter: drop-shadow(4px 4px 20px #000000); }
+.object-boundary { z-index: 10; border-radius: 3px; position: absolute; pointer-events: none; outline: rgba(255, 255, 0, 0.75) dashed 2.5px; transition: outline-color 0.2s; filter: drop-shadow(4px 4px 20px #000000); }
 .object-boundary:hover { opacity: 1; z-index: 11; /* Higher z-index upon hover so that overlapping elements can be clicked upon. */ }
 
 /*.object-boundary-center { position: absolute; height: 10px; width: 10px; background: red; border-radius: 100px; }*/
 
 .object-boundary-correct, .object-boundary-incorrect { display: flex; margin: 0; width: 30px; cursor: pointer; }
-.object-boundary-label { width: 150px; pointer-events: all; display: flex; }
-.object-boundary-label-text { display: flex; margin-right: 10px; align-items: center; margin-left: 6px; cursor: pointer; text-transform: capitalize; }
+.object-boundary-label { width: 150px; pointer-events: all; display: flex; border: 2px solid white; }
+.object-boundary-label-text { display: flex; margin-right: 5px; align-items: center; margin-left: 5px; cursor: pointer; text-transform: capitalize; font-size: 14px; }
 
-.object-boundary .object-boundary-label { width: fit-content; padding: 4px; position: absolute; top: -45px; left: 50%; transform: translateX(-50%); color: black; border-radius: 100px; font-size: 12px; font-weight: bold; }
+.object-boundary .object-boundary-label { width: fit-content; padding: 4px; position: absolute; top: -50px; left: 50%; transform: translateX(-50%); color: black; border-radius: 100px; font-size: 12px; font-weight: bold; }
 
 .object-boundary.object-boundary-shelter { outline-color: #FABF1C; }
 .object-boundary.object-boundary-signage { outline-color: #EE724E; }
 .object-boundary.object-boundary-seating { outline-color: #62AFFF; }
 .object-boundary.object-boundary-trashcan { outline-color: #F07ABC; }
 
-.object-boundary.object-boundary-seating .object-boundary-label { background: #62AFFF; }
-.object-boundary.object-boundary-shelter .object-boundary-label { background: #FABF1C; }
-.object-boundary.object-boundary-signage .object-boundary-label { background: #EE724E; }
-.object-boundary.object-boundary-trashcan .object-boundary-label { background: #F07ABC; }
+.object-boundary.object-boundary-seating .object-boundary-label { background: #62AFFF; border-color: #236bb2; }
+.object-boundary.object-boundary-shelter .object-boundary-label { background: #FABF1C; border-color: #b99421; }
+.object-boundary.object-boundary-signage .object-boundary-label { background: #EE724E; border-color: #a44023; }
+.object-boundary.object-boundary-trashcan .object-boundary-label { background: #F07ABC; border-color: #b43d7f; }
 
 .object-boundary-label-icon { fill: white; }
 
