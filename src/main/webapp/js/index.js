@@ -1,4 +1,6 @@
-
+/**
+ * Important class that defines the data structure of the marker object which is used to track all the labels.
+ */
 class Marker {
 
     /**
@@ -214,6 +216,12 @@ $(function() {
         $('.label-toolbar-overlay-container').show();
     }
 
+
+    /**
+     * Handles the click event on the place label button.
+     * @param e Click event
+     * @param labelType The type of the label to be placed.
+     */
     function placeLabelHandler(e, labelType) {
         e.preventDefault();
         e.stopPropagation();
@@ -261,6 +269,7 @@ $(function() {
      * @param labelType The type of the label. See LABEL_TYPES.
      * @param verificationState The verification state of the label. See HUMAN_VERIFICATION_STATE.
      * @param isHumanPlaced Whether the label was placed by a human or suggested by CV.
+     * @param confidence Confidence for the marker suggested by CV. It is 1 if the marker was placed by a human.
      * @param optionalClasses Optional classes to add to the marker.
      * @returns {Marker} The placed marker object.
      */
