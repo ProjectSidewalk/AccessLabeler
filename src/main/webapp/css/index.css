@@ -96,10 +96,10 @@ body {
 
 .label-toolbar-item-icon { width: 40px; height: 40px; }
 
-.label-toolbar-item.shelter { background: rgba(250, 191, 28, 0.75); }
-.label-toolbar-item.signage { background: rgba(221, 125, 56, 0.75); }
-.label-toolbar-item.seating { background: rgba(98, 175, 255, 0.75); }
-.label-toolbar-item.trashcan { background: rgba(240, 122, 188, 0.75); }
+.label-toolbar-item.shelter { background: rgba(250, 191, 28, 0.75); border-color: #b99421; }
+.label-toolbar-item.signage { background: rgba(221, 125, 56, 0.75); border-color: #a44023; }
+.label-toolbar-item.seating { background: rgba(98, 175, 255, 0.75); border-color: #236bb2; }
+.label-toolbar-item.trashcan { background: rgba(240, 122, 188, 0.75); border-color: #b43d7f; }
 
 .label-toolbar-item.shelter:hover { background: #FABF1C; }
 .label-toolbar-item.signage:hover { background: #DD7D38; }
@@ -137,7 +137,7 @@ body {
 /*.object-boundary-center { position: absolute; height: 10px; width: 10px; background: red; border-radius: 100px; }*/
 
 .object-boundary-correct, .object-boundary-incorrect { display: flex; margin: 0; width: 30px; cursor: pointer; }
-.object-boundary-label { width: 150px; pointer-events: all; display: flex; border: 2px solid white; }
+.object-boundary-label { width: 150px; pointer-events: all; display: flex; border: 2.5px solid white; }
 .object-boundary-label-text { display: flex; margin-right: 5px; align-items: center; margin-left: 5px; cursor: pointer; text-transform: capitalize; font-size: 14px; }
 
 .object-boundary .object-boundary-label { width: fit-content; padding: 4px; position: absolute; top: -50px; left: 50%; transform: translateX(-50%); color: black; border-radius: 100px; font-size: 12px; font-weight: bold; }
@@ -154,10 +154,10 @@ body {
 
 .object-boundary-label-icon { fill: white; }
 
-.object-boundary-correct .object-boundary-label-icon:hover, .object-boundary.confirmed .object-boundary-correct .object-boundary-label-icon { fill: lightgreen; }
+.object-boundary-correct .object-boundary-label-icon:hover, .object-boundary.confirmed .object-boundary-correct .object-boundary-label-icon { fill: #94F086; }
 .object-boundary-incorrect .object-boundary-label-icon:hover { fill: lightsalmon; } /* The label is removed if denied so no special directive for the icon needed. */
 
-.object-boundary.confirmed { outline-color: lightgreen; outline-style: solid; }
+.object-boundary.confirmed { outline-color: #94F086; outline-style: solid; }
 .object-boundary.denied { opacity: 0.1; }
 
 

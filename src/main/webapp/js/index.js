@@ -34,8 +34,7 @@ class Marker {
 const HUMAN_VERIFICATION_STATE = {
     'NOT_VERIFIED': 'NOT_VERIFIED',
     'VERIFIED_CORRECT': 'VERIFIED_CORRECT',
-    'VERIFIED_INCORRECT': 'VERIFIED_INCORRECT',
-    'VERIFIED_OTHER': 'VERIFIED_OTHER'
+    'VERIFIED_INCORRECT': 'VERIFIED_INCORRECT'
 }
 
 
@@ -777,7 +776,7 @@ $(function() {
     const inputShape = [1, 3, 640, 640];
     const topk = 100;
     const iouThreshold = 0.45;
-    const scoreThreshold = 0.2;
+    const scoreThreshold = 0.3;
 
     function renderBoxes(predictedBoxes) {
 
@@ -874,7 +873,7 @@ $(function() {
             // the model in this example contains a single MatMul node
             // it has 2 inputs: 'a'(float32, 3x4) and 'b'(float32, 4x3)
             // it has 1 output: 'c'(float32, 3x3)
-            session = await ort.InferenceSession.create('./models/attempt-2.onnx');
+            session = await ort.InferenceSession.create('./models/jan-27-10am.onnx');
             nms = await ort.InferenceSession.create('./models/nms-yolov8.onnx');
 
         } catch (e) {
