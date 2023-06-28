@@ -89,8 +89,8 @@
 
     <%-- viewBox="0 0 77 77" --%>
     <symbol id="arrow-icon">
-        <rect x="1.5" y="1.5" width="74" height="74" rx="37" stroke="white" stroke-width="3"></rect>
-        <path d="M40.5057 51L38.3182 48.8409L47.3239 39.8352H24V36.7102H47.3239L38.3182 27.733L40.5057 25.5455L53.233 38.2727L40.5057 51Z" fill="white"></path>
+        <rect x="1.5" y="1.5" width="74" height="74" rx="37"></rect>
+        <path class="arrow-icon-background" d="M40.5057 51L38.3182 48.8409L47.3239 39.8352H24V36.7102H47.3239L38.3182 27.733L40.5057 25.5455L53.233 38.2727L40.5057 51Z" fill="white"></path>
     </symbol>
 
 </svg>
@@ -157,6 +157,15 @@
                     <div class="label-toolbar-item-icon"></div>
                     <div class="label-toolbar-item-text">Done</div>
                 </div>
+
+                    <div class="label-toolbar-item next-location-button">
+                        <div class="label-toolbar-item-icon next-location-button-icon">
+                            <svg viewBox="0 0 77 77">
+                                <use href="#arrow-icon"></use>
+                            </svg>
+                        </div>
+                        <div class="label-toolbar-item-text next-location-button-title">Next Stop</div>
+                    </div>
             </div>
 
 
@@ -206,6 +215,12 @@
     <div class="dummy-marker template"></div>
 </div>
 
+<div class="mini-label-icon-for-cursor">
+    <svg viewBox="0 0 24 24">
+        <use href="#tick-icon" class="mini-label-icon"></use>
+    </svg>
+</div>
+
 <%--<img src="sv.jpg" width="100%" style="z-index: 100;" class="abcd">--%>
 
 <div class="mission-stats-panel-container">
@@ -231,89 +246,85 @@
     </div>
 </div>
 
-<div class="sidebar collapsed">
-    <div class="sidebar-title">StreetscapeCV</div>
-    <div class="sidebar-content">
-<%--        <div class="sidebar-section mission-location-container">--%>
-<%--            <div class="sidebar-icon mission-location-icon">--%>
-<%--                <svg viewBox="0 0 40 40">--%>
-<%--                    <use href="#location-icon"></use>--%>
+<%--<div class="sidebar collapsed">--%>
+<%--    <div class="sidebar-title">StreetscapeCV</div>--%>
+<%--    <div class="sidebar-content">--%>
+<%--&lt;%&ndash;        <div class="sidebar-section mission-location-container">&ndash;%&gt;--%>
+<%--&lt;%&ndash;            <div class="sidebar-icon mission-location-icon">&ndash;%&gt;--%>
+<%--&lt;%&ndash;                <svg viewBox="0 0 40 40">&ndash;%&gt;--%>
+<%--&lt;%&ndash;                    <use href="#location-icon"></use>&ndash;%&gt;--%>
+<%--&lt;%&ndash;                </svg>&ndash;%&gt;--%>
+<%--&lt;%&ndash;            </div>&ndash;%&gt;--%>
+<%--&lt;%&ndash;            <div class="sidebar-section-title mission-location-title">Mission Location</div>&ndash;%&gt;--%>
+<%--&lt;%&ndash;        </div>&ndash;%&gt;--%>
+<%--&lt;%&ndash;        <div class="sidebar-section mission-progress-container">&ndash;%&gt;--%>
+<%--&lt;%&ndash;            <div class="mission-progress-indicator"></div>&ndash;%&gt;--%>
+<%--&lt;%&ndash;        </div>&ndash;%&gt;--%>
+<%--&lt;%&ndash;        <div class="sidebar-section mission-information-container">&ndash;%&gt;--%>
+<%--&lt;%&ndash;            <div class="sidebar-icon mission-information-icon">&ndash;%&gt;--%>
+<%--&lt;%&ndash;                <svg viewBox="0 0 36 36">&ndash;%&gt;--%>
+<%--&lt;%&ndash;                    <use href="#info-icon"></use>&ndash;%&gt;--%>
+<%--&lt;%&ndash;                </svg>&ndash;%&gt;--%>
+<%--&lt;%&ndash;            </div>&ndash;%&gt;--%>
+<%--&lt;%&ndash;            <div class="sidebar-section-title mission-information-title">Mission Information</div>&ndash;%&gt;--%>
+<%--&lt;%&ndash;        </div>&ndash;%&gt;--%>
+<%--&lt;%&ndash;        <div class="sidebar-section mission-stats-container">&ndash;%&gt;--%>
+<%--&lt;%&ndash;            <div class="sidebar-icon mission-stats-icon">&ndash;%&gt;--%>
+<%--&lt;%&ndash;                <svg viewBox="0 0 44 44">&ndash;%&gt;--%>
+<%--&lt;%&ndash;                    <use href="#stats-icon"></use>&ndash;%&gt;--%>
+<%--&lt;%&ndash;                </svg>&ndash;%&gt;--%>
+<%--&lt;%&ndash;            </div>&ndash;%&gt;--%>
+<%--&lt;%&ndash;            <div class="sidebar-section-title mission-stats-title">Mission Stats</div>&ndash;%&gt;--%>
+<%--&lt;%&ndash;&lt;%&ndash;            <div class="sidebar-section-content mission-stats-content">&ndash;%&gt;&ndash;%&gt;--%>
+<%--&lt;%&ndash;&lt;%&ndash;                <div class="mission-stats-item">&ndash;%&gt;&ndash;%&gt;--%>
+<%--&lt;%&ndash;&lt;%&ndash;                    <div class="mission-stats-item-title">Total Images</div>&ndash;%&gt;&ndash;%&gt;--%>
+<%--&lt;%&ndash;&lt;%&ndash;                    <div class="mission-stats-item-value">0</div>&ndash;%&gt;&ndash;%&gt;--%>
+<%--&lt;%&ndash;&lt;%&ndash;                </div>&ndash;%&gt;&ndash;%&gt;--%>
+<%--&lt;%&ndash;&lt;%&ndash;                <div class="mission-stats-item">&ndash;%&gt;&ndash;%&gt;--%>
+<%--&lt;%&ndash;&lt;%&ndash;                    <div class="mission-stats-item-title">Total Labels</div>&ndash;%&gt;&ndash;%&gt;--%>
+<%--&lt;%&ndash;&lt;%&ndash;                    <div class="mission-stats-item-value">0</div>&ndash;%&gt;&ndash;%&gt;--%>
+<%--&lt;%&ndash;&lt;%&ndash;                </div>&ndash;%&gt;&ndash;%&gt;--%>
+<%--&lt;%&ndash;&lt;%&ndash;                <div class="mission-stats-item">&ndash;%&gt;&ndash;%&gt;--%>
+<%--&lt;%&ndash;&lt;%&ndash;                    <div class="mission-stats-item-title">Total Labels Correct</div>&ndash;%&gt;&ndash;%&gt;--%>
+<%--&lt;%&ndash;&lt;%&ndash;                    <div class="mission-stats-item-value">0</div>&ndash;%&gt;&ndash;%&gt;--%>
+<%--&lt;%&ndash;&lt;%&ndash;                </div>&ndash;%&gt;&ndash;%&gt;--%>
+<%--&lt;%&ndash;&lt;%&ndash;                <div class="mission-stats-item">&ndash;%&gt;&ndash;%&gt;--%>
+<%--&lt;%&ndash;&lt;%&ndash;                    <div class="mission-stats-item-title">Total Labels Incorrect</div>&ndash;%&gt;&ndash;%&gt;--%>
+<%--&lt;%&ndash;&lt;%&ndash;                    <div class="mission-stats-item-value">0</div>&ndash;%&gt;&ndash;%&gt;--%>
+<%--&lt;%&ndash;&lt;%&ndash;                </div>&ndash;%&gt;&ndash;%&gt;--%>
+<%--&lt;%&ndash;&lt;%&ndash;                <div class="mission-stats-item">&ndash;%&gt;&ndash;%&gt;--%>
+<%--&lt;%&ndash;&lt;%&ndash;                    <div class="mission-stats-item-title">Total Labels Skipped</div>&ndash;%&gt;&ndash;%&gt;--%>
+<%--&lt;%&ndash;&lt;%&ndash;                    <div class="mission-stats-item-value">0</div>&ndash;%&gt;&ndash;%&gt;--%>
+<%--&lt;%&ndash;&lt;%&ndash;                </div>&ndash;%&gt;&ndash;%&gt;--%>
+<%--&lt;%&ndash;        </div>&ndash;%&gt;--%>
+<%--&lt;%&ndash;        <div class="sidebar-section tips-container">&ndash;%&gt;--%>
+<%--&lt;%&ndash;            <div class="sidebar-icon tips-icon">&ndash;%&gt;--%>
+<%--&lt;%&ndash;                <svg viewBox="0 0 53 53">&ndash;%&gt;--%>
+<%--&lt;%&ndash;                    <use href="#tips-icon"></use>&ndash;%&gt;--%>
+<%--&lt;%&ndash;                </svg>&ndash;%&gt;--%>
+<%--&lt;%&ndash;            </div>&ndash;%&gt;--%>
+<%--&lt;%&ndash;            <div class="sidebar-section-title tips-title">Tips</div>&ndash;%&gt;--%>
+<%--&lt;%&ndash;        </div>&ndash;%&gt;--%>
+
+<%--        <div class="sidebar-section next-location-button">--%>
+<%--            <div class="sidebar-section-title next-location-button-title">Next Stop</div>--%>
+<%--            <div class="sidebar-icon next-location-button-icon">--%>
+<%--                <svg viewBox="0 0 77 77">--%>
+<%--                    <use href="#arrow-icon"></use>--%>
 <%--                </svg>--%>
 <%--            </div>--%>
-<%--            <div class="sidebar-section-title mission-location-title">Mission Location</div>--%>
-<%--        </div>--%>
-<%--        <div class="sidebar-section mission-progress-container">--%>
-<%--            <div class="mission-progress-indicator"></div>--%>
-<%--        </div>--%>
-<%--        <div class="sidebar-section mission-information-container">--%>
-<%--            <div class="sidebar-icon mission-information-icon">--%>
-<%--                <svg viewBox="0 0 36 36">--%>
-<%--                    <use href="#info-icon"></use>--%>
-<%--                </svg>--%>
-<%--            </div>--%>
-<%--            <div class="sidebar-section-title mission-information-title">Mission Information</div>--%>
-<%--        </div>--%>
-<%--        <div class="sidebar-section mission-stats-container">--%>
-<%--            <div class="sidebar-icon mission-stats-icon">--%>
-<%--                <svg viewBox="0 0 44 44">--%>
-<%--                    <use href="#stats-icon"></use>--%>
-<%--                </svg>--%>
-<%--            </div>--%>
-<%--            <div class="sidebar-section-title mission-stats-title">Mission Stats</div>--%>
-<%--&lt;%&ndash;            <div class="sidebar-section-content mission-stats-content">&ndash;%&gt;--%>
-<%--&lt;%&ndash;                <div class="mission-stats-item">&ndash;%&gt;--%>
-<%--&lt;%&ndash;                    <div class="mission-stats-item-title">Total Images</div>&ndash;%&gt;--%>
-<%--&lt;%&ndash;                    <div class="mission-stats-item-value">0</div>&ndash;%&gt;--%>
-<%--&lt;%&ndash;                </div>&ndash;%&gt;--%>
-<%--&lt;%&ndash;                <div class="mission-stats-item">&ndash;%&gt;--%>
-<%--&lt;%&ndash;                    <div class="mission-stats-item-title">Total Labels</div>&ndash;%&gt;--%>
-<%--&lt;%&ndash;                    <div class="mission-stats-item-value">0</div>&ndash;%&gt;--%>
-<%--&lt;%&ndash;                </div>&ndash;%&gt;--%>
-<%--&lt;%&ndash;                <div class="mission-stats-item">&ndash;%&gt;--%>
-<%--&lt;%&ndash;                    <div class="mission-stats-item-title">Total Labels Correct</div>&ndash;%&gt;--%>
-<%--&lt;%&ndash;                    <div class="mission-stats-item-value">0</div>&ndash;%&gt;--%>
-<%--&lt;%&ndash;                </div>&ndash;%&gt;--%>
-<%--&lt;%&ndash;                <div class="mission-stats-item">&ndash;%&gt;--%>
-<%--&lt;%&ndash;                    <div class="mission-stats-item-title">Total Labels Incorrect</div>&ndash;%&gt;--%>
-<%--&lt;%&ndash;                    <div class="mission-stats-item-value">0</div>&ndash;%&gt;--%>
-<%--&lt;%&ndash;                </div>&ndash;%&gt;--%>
-<%--&lt;%&ndash;                <div class="mission-stats-item">&ndash;%&gt;--%>
-<%--&lt;%&ndash;                    <div class="mission-stats-item-title">Total Labels Skipped</div>&ndash;%&gt;--%>
-<%--&lt;%&ndash;                    <div class="mission-stats-item-value">0</div>&ndash;%&gt;--%>
-<%--&lt;%&ndash;                </div>&ndash;%&gt;--%>
-<%--        </div>--%>
-<%--        <div class="sidebar-section tips-container">--%>
-<%--            <div class="sidebar-icon tips-icon">--%>
-<%--                <svg viewBox="0 0 53 53">--%>
-<%--                    <use href="#tips-icon"></use>--%>
-<%--                </svg>--%>
-<%--            </div>--%>
-<%--            <div class="sidebar-section-title tips-title">Tips</div>--%>
 <%--        </div>--%>
 
-        <div class="sidebar-section next-location-button">
-            <div class="sidebar-section-title next-location-button-title">Next Stop</div>
-            <div class="sidebar-icon next-location-button-icon">
-                <svg viewBox="0 0 77 77">
-                    <use href="#arrow-icon"></use>
-                </svg>
-            </div>
-        </div>
-
-        <div class="sidebar-section submit-button">
-            <div class="sidebar-section-title submit-button-title">Done</div>
-        </div>
-    </div>
-    <div class="toggle-sidebar-button"></div>
-</div>
+<%--        <div class="sidebar-section submit-button">--%>
+<%--            <div class="sidebar-section-title submit-button-title">Done</div>--%>
+<%--        </div>--%>
+<%--    </div>--%>
+<%--    <div class="toggle-sidebar-button"></div>--%>
+<%--</div>--%>
 
 <%--<div class="screen-capture">--%>
 <%--    Take a screenshot--%>
 <%--</div>--%>
-
-<%
-    String latLng = request.getParameter("loc");
-%>
 
 <script>
     var panorama;
@@ -337,8 +348,8 @@
         // const latLng = "47.6572767,-122.3046887";
         // const latLng = "47.6539783,-122.3051593";
         // const latLng = "47.6523437,-122.3062897";
-        const latLng = "47.6557727,-122.3120149";
-        // const latLng = "47.6593773,-122.3119228";
+        // const latLng = "47.6557727,-122.3120149";
+        const latLng = "47.6593773,-122.3119228";
         // const latLng = "47.6493394226547, -122.30513426461609";
 
         console.log(latLng.split(',')[0] + ' : ' + latLng.split(',')[1]);

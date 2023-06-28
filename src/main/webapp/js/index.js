@@ -1,4 +1,6 @@
-
+/**
+ * Important class that defines the data structure of the marker object which is used to track all the labels.
+ */
 class Marker {
 
     /**
@@ -32,8 +34,7 @@ class Marker {
 const HUMAN_VERIFICATION_STATE = {
     'NOT_VERIFIED': 'NOT_VERIFIED',
     'VERIFIED_CORRECT': 'VERIFIED_CORRECT',
-    'VERIFIED_INCORRECT': 'VERIFIED_INCORRECT',
-    'VERIFIED_OTHER': 'VERIFIED_OTHER'
+    'VERIFIED_INCORRECT': 'VERIFIED_INCORRECT'
 }
 
 
@@ -41,6 +42,8 @@ $(function() {
     let isMouseDown = false;
 
     let isMarking = false;
+
+    let showMiniLabelUnderCursor = false;
 
     let currentLabelType = null;
 
@@ -55,6 +58,8 @@ $(function() {
     var $panorama = $('#panorama'); // TODO: Check if this is available from the start. What happens if it takes time to load?
     const $dummyImageContainer = $('.dummy-image-container');
     const $panoramaContainer = $('.panorama-container'); // This element is included in the HTML and should be available from the start.
+
+    const $miniLabel = $('.mini-label-icon-for-cursor');
 
     let GSVScaleX = $panoramaContainer.width()/640;
     let GSVScaleY = $panoramaContainer.height()/640;
@@ -104,7 +109,7 @@ $(function() {
     // Captures the data and state at a particular location.
     // All of these should be reset when the user moves to a new location.
     const currentState = {
-        location: '',       // lat, lng string.
+        location: '',       // todo: update
         markers: [],        // all markers including the non verified ones.
         markerID : 0,       // tracks the ID of the next marker to be placed. gets reset when moved to a new location.
         verifiedLabels: [], // only verified labels.
@@ -237,6 +242,12 @@ $(function() {
         $('.label-toolbar-overlay-container').show();
     }
 
+
+    /**
+     * Handles the click event on the place label button.
+     * @param e Click event
+     * @param labelType The type of the label to be placed.
+     */
     function placeLabelHandler(e, labelType) {
         e.preventDefault();
         e.stopPropagation();
@@ -284,6 +295,7 @@ $(function() {
      * @param labelType The type of the label. See LABEL_TYPES.
      * @param verificationState The verification state of the label. See HUMAN_VERIFICATION_STATE.
      * @param isHumanPlaced Whether the label was placed by a human or suggested by CV.
+     * @param confidence Confidence for the marker suggested by CV. It is 1 if the marker was placed by a human.
      * @param optionalClasses Optional classes to add to the marker.
      * @returns {Marker} The placed marker object.
      */
@@ -494,6 +506,8 @@ $(function() {
 
             $('.overlay').css({'pointer-events': 'all'});
             $('.mode-indicator').fadeIn(200);
+
+            showCurrentLabelUnderCursor(e);
         }
 
         function stopLabelingHandler(e) {
@@ -506,6 +520,8 @@ $(function() {
 
             $('.overlay').css({'pointer-events': 'none'});
             $('.mode-indicator').fadeOut(200);
+
+            hideCurrentLabelUnderCursor();
         }
 
         function showLabelsHandler() {
@@ -653,6 +669,42 @@ $(function() {
             $('.mission-stats-panel-container').addClass('focus');
         }
 
+        function moveMiniLabelUnderCursor(e) {
+
+            if (!showMiniLabelUnderCursor) {
+                return;
+            }
+
+            e.preventDefault();
+
+            $miniLabel.css({'left': e.clientX - ($miniLabel.width()/2), 'top': e.clientY - ($miniLabel.height()/2)});
+        }
+
+
+        // We show the current label with the cursor when the user is marking.
+        function showCurrentLabelUnderCursor(e) {
+
+            e.preventDefault();
+
+            $('use', $miniLabel).attr('href', iconsInfo[LABEL_TYPES[currentLabelType]].icon.id);
+            $('svg', $miniLabel).attr('viewBox', iconsInfo[LABEL_TYPES[currentLabelType]].icon.viewBox);
+
+            $miniLabel.addClass(LABEL_TYPES[currentLabelType]);
+
+            showMiniLabelUnderCursor = true;
+
+            moveMiniLabelUnderCursor(e);
+            $miniLabel.css('display', 'flex');
+        }
+
+        function hideCurrentLabelUnderCursor() {
+
+            $miniLabel.removeClass(LABEL_TYPES[currentLabelType]); // We can remove only the currentLabelType as it changes only when the user clicks on a label type again.
+
+            $miniLabel.hide();
+            showMiniLabelUnderCursor = false;
+        }
+
         $('.next-location-button').click(function() {
             nextLocationHandler(false);
         });
@@ -709,9 +761,13 @@ $(function() {
         })
 
 
-        $(document).on('mousemove', function () {
+        $(document).on('mousemove', function (e) {
             if (!isMarking && isMouseDown) {
                 moveMarkers();
+            }
+
+            if (isMarking) {
+                moveMiniLabelUnderCursor(e);
             }
         });
 
@@ -756,7 +812,7 @@ $(function() {
     const inputShape = [1, 3, 640, 640];
     const topk = 100;
     const iouThreshold = 0.45;
-    const scoreThreshold = 0.2;
+    const scoreThreshold = 0.3;
 
     function renderBoxes(predictedBoxes) {
 
@@ -853,7 +909,7 @@ $(function() {
             // the model in this example contains a single MatMul node
             // it has 2 inputs: 'a'(float32, 3x4) and 'b'(float32, 4x3)
             // it has 1 output: 'c'(float32, 3x3)
-            session = await ort.InferenceSession.create('./models/attempt-2.onnx');
+            session = await ort.InferenceSession.create('./models/jan-27-10am.onnx');
             nms = await ort.InferenceSession.create('./models/nms-yolov8.onnx');
 
         } catch (e) {
