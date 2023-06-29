@@ -36,7 +36,9 @@ public class FileManager {
 
             File output = new File(baseDirPath + File.separator + File.separator + dirName + File.separator + name);
 
-            if (IMAGE_DIR.equals(dirName)) {
+            // The directory to save image could contain a subdirectory denoting high or low res.
+            // So don't check for equality, check if it contains the directory name.
+            if (dirName != null && dirName.contains(IMAGE_DIR)) {
 
                 String base64String = data.split(",")[1];
                 byte[] decodedBytes = Base64.getDecoder().decode(base64String);

@@ -15,7 +15,7 @@ class Marker {
      * @param top
      * @param verificationState
      */
-    constructor(id, type, heading, pitch, x, y, left, top, verificationState, isHumanPlaced, confidence) {
+    constructor(id, type, heading, pitch, x, y, left, top, verificationState, isHumanPlaced, confidence, panoID) {
         this.id = id;
         this.labelType = type;
         this.heading = heading;
@@ -27,6 +27,7 @@ class Marker {
         this.verificationState = verificationState;
         this.isHumanPlaced = isHumanPlaced;
         this.confidence = confidence;
+        this.panoID = panoID;
     }
 }
 
@@ -50,7 +51,7 @@ $(function() {
     let startTime = null;
     let endTime = null;
 
-    let dataIDX = get('idx') ? get('idx') : 0;
+    let dataIDX = get('idx') ? parseInt(get('idx')) : -1;
 
     let missionID = 'test-mission-id';
     const sessionID = get('sessionID') ? get('sessionID') : new Date().getTime().toString(); // Set only once.
@@ -61,8 +62,10 @@ $(function() {
 
     const $miniLabel = $('.mini-label-icon-for-cursor');
 
-    let GSVScaleX = $panoramaContainer.width()/640;
-    let GSVScaleY = $panoramaContainer.height()/640;
+    const IMAGE_SIZE = 640; // This is the size of the image used for training and inference.
+
+    let GSVScaleX = $panoramaContainer.width()/IMAGE_SIZE;
+    let GSVScaleY = $panoramaContainer.height()/IMAGE_SIZE;
 
 
     const MARKER_DISTANCE_BUFFER = 50;
@@ -71,6 +74,9 @@ $(function() {
 
 
     const DEBUG_MODE = get('debug') === '1';
+
+
+    // let lastPov;
 
 
     // All the label types
@@ -106,24 +112,36 @@ $(function() {
     }
 
 
-    // Captures the data and state at a particular location.
+    // Captures the data and state at a particular 'panorama'.
     // All of these should be reset when the user moves to a new location.
-    const currentState = {
+    const currentPanoState = {
         location: '',       // todo: update
         markers: [],        // all markers including the non verified ones.
-        markerID : 0,       // tracks the ID of the next marker to be placed. gets reset when moved to a new location.
         verifiedLabels: [], // only verified labels.
     }
 
-
-    let lastPov;
-
-
-    function calculateGSVScale() {
-        GSVScaleX = $panoramaContainer.width()/640;
-        GSVScaleY = $panoramaContainer.height()/640;
+    const currentLocationState = {
+        labelTypeToMarkerCount : {},       // will be initialized right after. Tracks the ID of the next marker to be placed for each label type. Gets reset when moved to a new location.
     }
 
+    // We should have only one place (LABEL_TYPES) where label types are declared. So use a function to initialize.
+    function initLabelTypeToMarkerCount() {
+        for (const key in LABEL_TYPES) {
+            currentLocationState.labelTypeToMarkerCount[LABEL_TYPES[key]] = 0;
+        }
+    }
+
+    initLabelTypeToMarkerCount();
+
+    // GSV size may potentially change. So we need to update the scale factor.
+    // IMAGE_SIZE is the image size used for training and inference.
+    function calculateGSVScale() {
+        GSVScaleX = $panoramaContainer.width()/IMAGE_SIZE;
+        GSVScaleY = $panoramaContainer.height()/IMAGE_SIZE;
+    }
+
+    // Updates the dummy-image element with what is currently visible in the GSV.
+    // The image can then be used for inference or saving on the server etc.
     function updateDummyImageFromGSV() {
 
         $('.status-indicator').text('Detecting...').show();
@@ -132,27 +150,59 @@ $(function() {
 
         var webglImage = (function convertCanvasToImage(canvas) {
             var image = new Image();
-            image.src = canvas.toDataURL('image/jpeg', 0.8);
+            image.src = canvas.toDataURL('image/jpeg', 1);
             return image;
         })($('.widget-scene-canvas')[0]);
 
         $('.dummy-image').attr('src', webglImage.src);
     }
 
+    function savePanoContainerScreenshot() {
+
+        const d = {
+            'name': 'label-' + currentPanoState.location + '-' + panorama.getPano() + '-' + new Date().getTime() +'.jpg',
+        }
+
+        // Save a high-res version of the image.
+        html2canvas($panoramaContainer[0]).then(canvas => {
+
+            d.dir = 'labels';
+            d.b64 = canvas.toDataURL('image/jpeg', 1);
+
+            $.ajax({
+                type: "POST",
+                url: "saveImage.jsp",
+                data: d,
+                contentType: "application/x-www-form-urlencoded; charset=UTF-8",
+                success: function(data){
+                    console.log(data);
+                }
+            });
+        });
+
+    }
+
 
     // Saves a screenshot of the GSV on the server with the name gsv-<panoID>-<timestamp>.jpg.
     function saveGSVScreenshot() {
 
-        const $dummyImageContainer = $('.dummy-image-container');
+        $panoramaContainer.css('outline', '10px solid goldenrod');
+        setTimeout(function() {
+            $panoramaContainer.css('outline', 'none');
+        }, 800);
 
-        html2canvas($dummyImageContainer[0]).then(canvas => {
+        // Saves a screenshot of the GSV to the server with the name gsv-<panoID>-<timestamp>.jpg
+        // Pano ID will help us trace back to the panorama if needed.
+        const d = {
+            'name': 'gsv-' + currentPanoState.location + '-' + panorama.getPano() + '-' + new Date().getTime() +'.jpg',
+        }
 
-            // Saves a screenshot of the GSV to the server with the name gsv-<panoID>-<timestamp>.jpg
-            // Pano ID will help us trace back to the panorama if needed.
-            const d = {
-                'name': 'gsv-' + panorama.getPano() + '-' + new Date().getTime() +'.jpg',
-                'b64': canvas.toDataURL('image/jpeg', 0.8)
-            }
+        // Save a high-res version of the image.
+        html2canvas($('.dummy-image-container')[0]).then(canvas => {
+
+            d.dir = 'high-res';
+            d.b64 = canvas.toDataURL('image/jpeg', 1);
+
             $.ajax({
                 type: "POST",
                 url: "saveImage.jsp",
@@ -166,13 +216,8 @@ $(function() {
     }
 
 
-    $('.screen-capture').click(function() {
-
-        updateDummyImageFromGSV();
-
-    });
-
-
+    // Renders the label toolbar based on the JSON descriptor.
+    // Note: this doesn't attach event handlers itself.
     function showLabels() {
 
         // This function renders the labels in the labels toolbar based on the JSON descriptor.
@@ -216,36 +261,16 @@ $(function() {
     }
 
 
-    /**
-     * Handles the click event on the place label button.
-     * @param e Click event
-     * @param labelType The type of the label to be placed.
-     */
-    function placeLabelHandler(e, labelType) {
-        e.preventDefault();
-        e.stopPropagation();
 
-        const x = e.clientX - $panorama.offset().left;
-        const y = e.clientY - $panorama.offset().top;
-
-        const m = placeMarker(null, x, y, labelType, HUMAN_VERIFICATION_STATE.VERIFIED_CORRECT, true, 1, null);
-
-        $('.stop-labeling').click(); // Automatically stop labeling after placing a label
-
-        currentState.verifiedLabels.push(m);
-
-        labelStats.nLabelsManuallyPlaced++;
-    }
-
-    // Removes the marker from the DOM and the currentState.markers array.
+    // Removes the marker from the DOM and the currentPanoState.markers array.
     function removeMarkerIfExists(markerID) {
 
         let result = null;
 
         $('.marker[data-id=' + markerID + ']').remove();
-        for (let i = 0; i < currentState.markers.length; i++) {
-            if (currentState.markers[i].id === markerID) {
-                result = currentState.markers.splice(i, 1);
+        for (let i = 0; i < currentPanoState.markers.length; i++) {
+            if (currentPanoState.markers[i].id === markerID) {
+                result = currentPanoState.markers.splice(i, 1);
 
                 if (DEBUG_MODE) {
                     console.log('Removed marker with ID: ' + markerID);
@@ -260,7 +285,7 @@ $(function() {
 
     /**
      * Important function that places a marker at the given coordinates.
-     * Adds the marker to the UI and currentState.markers array.
+     * Adds the marker to the UI and currentPanoState.markers array.
      * Note: this doesn't remove the marker if it already exists. Use removeMarkerIfExists() for that.
      * @param optionalID ID for the marker. If not provided, it will be auto-generated.
      * @param x X coordinate of the marker in the current GSV window.
@@ -282,12 +307,16 @@ $(function() {
 
         $marker.css({'left': newCoords.left, 'top': newCoords.top});
 
-        $marker.attr('data-id', currentState.markerID);
+        // Construct a markerID using the labelType and it's current count.
+        // Important: this should be the only place where a marker ID is generated.
+        const markerID = optionalID ? optionalID : labelType + '-' + currentLocationState.labelTypeToMarkerCount[labelType];
 
-        lastPov = {
-            heading: pov.heading,
-            pitch: pov.pitch
-        };
+        $marker.attr('data-id', markerID);
+
+        // lastPov = {
+        //     heading: pov.heading,
+        //     pitch: pov.pitch
+        // };
 
         $marker.addClass('marker-' + labelType);
 
@@ -309,11 +338,11 @@ $(function() {
         $panoramaContainer.append($marker);
 
         // verification state here could be VERIFIED_CORRECT or NOT_VERIFIED.
-        const m = new Marker(optionalID ? optionalID : currentState.markerID, labelType, pov.heading, pov.pitch, x, y, newCoords.left, newCoords.top, verificationState, isHumanPlaced, );
-        currentState.markers.push(m);
+        const m = new Marker(markerID, labelType, pov.heading, pov.pitch, x, y, newCoords.left, newCoords.top, verificationState, isHumanPlaced, confidence, panorama.getPano());
+        currentPanoState.markers.push(m);
 
         if (!optionalID) {
-            currentState.markerID++;
+            currentLocationState.labelTypeToMarkerCount[labelType]++;   // Increment the count for the label type.
         }
 
         return m;
@@ -328,8 +357,8 @@ $(function() {
 
         const pov = panorama.getPov();
 
-        for (let i = 0; i < currentState.markers.length; i++) {
-            const marker = currentState.markers[i];
+        for (let i = 0; i < currentPanoState.markers.length; i++) {
+            const marker = currentPanoState.markers[i];
             const $marker = $('.marker-' + marker.labelType + '[data-id="' + marker.id + '"]');
             const position = getPosition(marker.originalX, marker.originalY, panoWidth, panoHeight, pov.zoom, marker.heading, marker.pitch);
             const newCoords = povToPixel3d(position, pov, pov.zoom, panoWidth, panoHeight);
@@ -351,8 +380,8 @@ $(function() {
      * @param verificationState New verification state
      */
     function updateMarkerVerificationState(markerID, verificationState) {
-        for (let i = 0; i < currentState.markers.length; i++) {
-            const marker = currentState.markers[i];
+        for (let i = 0; i < currentPanoState.markers.length; i++) {
+            const marker = currentPanoState.markers[i];
             if (marker.id === markerID) {
                 marker.verificationState = verificationState;
                 $('.marker-' + marker.labelType + '[data-id="' + marker.id + '"]').removeClass('not-verified').addClass('verified');
@@ -362,24 +391,28 @@ $(function() {
     }
 
     function updateCurrentStateLocation(locationID) {
-        currentState.location = locationID;
+        currentPanoState.location = locationID;
     }
 
     /**
-     * Resets the currentState so that the labeling can be started from the beginning.
+     * Resets the currentPanoState so that the labeling can be started from the beginning.
      */
-    function resetCurrentState() {
+    function resetCurrentPanoState() {
 
         function resetCurrentStateUI() {
             $('.marker:not(.template)').remove();
             $('.object-boundary:not(.template)').remove();
         }
 
-        currentState.markers = [];
-        currentState.markerID = 0;
-        currentState.verifiedLabels = [];
+        currentPanoState.markers = [];
+
+        currentPanoState.verifiedLabels = [];
 
         resetCurrentStateUI();
+    }
+
+    function resetCurrentLocationState() {
+        initLabelTypeToMarkerCount(); // Reset currentLocationState.labelTypeToMarkerCount
     }
 
     function updateMissionStatsUI() {
@@ -418,6 +451,7 @@ $(function() {
             'missionStats': missionStats,
             'labelStats': labelStats,
             'timestamp': new Date().getTime(),
+            'dataIDX': dataIDX      // Logging to manage in case of a crash. We might not be able to take all the screenshots in one go.
         };
 
         const d = {
@@ -437,6 +471,36 @@ $(function() {
                 console.log('Error posting log data to the server.');
             }
         });
+    }
+
+    function getLocationFromIdx(data, idx) {
+
+        const result = {
+            'location': null,
+            'locationID': null
+        }
+        // We right now support two sources of data—King County GIS and Overpass Turbo/OSM.
+        // And they both have different formats. This block handles it. This is not the best solution but it works for now.
+        if (data.source === 'KCGIS') {
+            result.location = [
+                data.features[idx].X,
+                data.features[idx].Y
+            ];
+            result.locationID = data.features[idx].OBJECTID;
+        } else {
+            result.location = data.features[idx].geometry.coordinates; // This currently assumes that the data is available in the Overpass Turbo/OSM format.
+            result.locationID = data.features[idx].properties['gtfs:stop_id']; // todo: we should check if this is unique.
+        }
+
+        return result;
+    }
+
+    function updateLabelStatsLocationToVerifiedLabels() {
+        if (!labelStats.locationToVerifiedLabels[currentPanoState.location]) {
+            labelStats.locationToVerifiedLabels[currentPanoState.location] = [];
+        }
+
+        labelStats.locationToVerifiedLabels[currentPanoState.location] = labelStats.locationToVerifiedLabels[currentPanoState.location].concat(currentPanoState.verifiedLabels);
     }
 
     /**
@@ -489,10 +553,14 @@ $(function() {
 
         function nextLocationHandler(shouldPickRandomLocation) {
 
-            // First let's update all the logs needed.
+            // First let's save a screenshot.
+            // savePanoContainerScreenshot();
+
+            // Then, let's update all the logs needed.
 
             // Let's update labelStats.
-            labelStats.locationToVerifiedLabels[currentState.location] = currentState.verifiedLabels;
+            updateLabelStatsLocationToVerifiedLabels();
+
 
             // Let's update mission related stats.
             missionStats.completedLocations++;
@@ -500,6 +568,14 @@ $(function() {
 
             // Post the log data to server.
             postLogData();
+
+            // Reset the current state so the labeling can be started from the beginning.
+            // It is important to do this before starting the next location.
+            resetCurrentPanoState();
+            resetCurrentLocationState();
+
+            //-----------------//
+            // Start the next location.
 
             if (shouldPickRandomLocation) {
                 dataIDX = getRandomInt (0, GIS_DATA.features.length - 1);
@@ -515,32 +591,18 @@ $(function() {
                 return;
             }
 
-            let location = null;
-            let locationID = null;
-
-            // We right now support two sources of data—King County GIS and Overpass Turbo/OSM.
-            // And they both have different formats. This block handles it. This is not the best solution but it works for now.
-            if (GIS_DATA.source === 'KCGIS') {
-                location = [
-                    GIS_DATA.features[dataIDX].X,
-                    GIS_DATA.features[dataIDX].Y
-                ];
-                locationID = GIS_DATA.features[dataIDX].OBJECTID;
-            } else {
-                location = GIS_DATA.features[dataIDX].geometry.coordinates; // This currently assumes that the data is available in the Overpass Turbo/OSM format.
-                locationID = GIS_DATA.features[dataIDX].properties['gtfs:stop_id']; // todo: we should check if this is unique.
-            }
-
-            const currentPov = panorama.getPov();
+            const locationInfo = getLocationFromIdx(GIS_DATA, dataIDX);
+            let location = locationInfo.location;
+            let locationID = locationInfo.locationID;
 
             panorama.setPosition({lat: location[1], lng: location[0]});
+
+            const currentPov = panorama.getPov();
             panorama.setPov({heading: currentPov.heading, pitch: currentPov.pitch, zoom: 1}); // Always start with zoom 1.
 
             console.log("Index: " + dataIDX);
             console.log("Info: " + JSON.stringify(GIS_DATA.features[dataIDX]));
 
-            // Reset the current state so the labeling can be started from the beginning.
-            resetCurrentState();
 
             updateCurrentStateLocation(locationID);
 
@@ -557,8 +619,6 @@ $(function() {
 
         function toggleSidebarHandler() {
             const $sidebar = $('.sidebar');
-
-            const $dummyImageContainer = $('.dummy-image-container');
 
             let sidebarRight = 0;
             let panoWidth = '70%';
@@ -587,12 +647,12 @@ $(function() {
             const $closestObjectBoundary = $(e.target).closest('.object-boundary');
             $closestObjectBoundary.addClass('confirmed');
 
-            const id = parseInt($closestObjectBoundary.attr('data-id'));
+            const id = $closestObjectBoundary.attr('data-id');
             const marker = updateMarkerVerificationState(id, HUMAN_VERIFICATION_STATE.VERIFIED_CORRECT);
 
             // Add the marker to the current state. We will later log this info.
             const markerClone = structuredClone(marker); // This is a deep clone using new API. We might have to revisit this for better support.
-            currentState.verifiedLabels.push(markerClone);
+            currentPanoState.verifiedLabels.push(markerClone);
 
             updateLabelStats(marker);
         }
@@ -606,12 +666,12 @@ $(function() {
             const $closestObjectBoundary = $(e.target).closest('.object-boundary');
             $closestObjectBoundary.addClass('denied');
 
-            const id = parseInt($closestObjectBoundary.attr('data-id'));
+            const id = $closestObjectBoundary.attr('data-id');
             const marker = updateMarkerVerificationState(id, HUMAN_VERIFICATION_STATE.VERIFIED_INCORRECT);
 
             // Add the marker to the current state. We will later log this info.
             const markerClone = structuredClone(marker); // This is a deep clone using new API. We might have to revisit this for better support.
-            currentState.verifiedLabels.push(markerClone);
+            currentPanoState.verifiedLabels.push(markerClone);
 
             updateLabelStats(marker);
         }
@@ -619,7 +679,7 @@ $(function() {
         function doneLabelingHandler() {
 
             // Update label stats.
-            labelStats.locationToVerifiedLabels[currentState.location] = currentState.verifiedLabels;
+            updateLabelStatsLocationToVerifiedLabels();
 
             // Update the stats and relevant UI one last time.
             missionStats.completedLocations++;
@@ -669,6 +729,27 @@ $(function() {
             showMiniLabelUnderCursor = false;
         }
 
+        /**
+         * Handles the click event on the place label button.
+         * @param e Click event
+         * @param labelType The type of the label to be placed.
+         */
+        function placeLabelHandler(e, labelType) {
+            e.preventDefault();
+            e.stopPropagation();
+
+            const x = e.clientX - $panorama.offset().left;
+            const y = e.clientY - $panorama.offset().top;
+
+            const m = placeMarker(null, x, y, labelType, HUMAN_VERIFICATION_STATE.VERIFIED_CORRECT, true, 1, null);
+
+            $('.stop-labeling').click(); // Automatically stop labeling after placing a label
+
+            currentPanoState.verifiedLabels.push(m);
+
+            labelStats.nLabelsManuallyPlaced++;
+        }
+
         $('.next-location-button').click(function() {
             nextLocationHandler(false);
         });
@@ -710,9 +791,9 @@ $(function() {
         });
 
         $(document).on('mousedown', function () {
-            if (!lastPov) {
-                lastPov = panorama.getPov();
-            }
+            // if (!lastPov) {
+            //     lastPov = panorama.getPov();
+            // }
             isMouseDown = true;
         })
 
@@ -748,32 +829,18 @@ $(function() {
         // panorama object is initialized in JSP.
         panorama.addListener("pov_changed", () => {
             $('.object-boundary:not(.template)').remove();
-
-            // if (Number.isInteger(panorama.getPov().zoom)) {
-            //     updateDummyImageFromGSV();
-            // }
         });
 
-        // If the user takes steps, then we should reset the markers and currentState.
+        // If the user takes steps, then we should reset the markers and currentPanoState.
         panorama.addListener("position_changed", () => {
 
-            resetCurrentState();
+            updateLabelStatsLocationToVerifiedLabels();
 
-            // updateDummyImageFromGSV();
+            resetCurrentPanoState();
         });
     }
 
-    let prevZoom = 1;
-
-    // panorama.addListener('pov_changed', function () {
-    //     const newZoom = panorama.getPov().zoom;
-    //     if (Number.isInteger(newZoom) && prevZoom !== panorama.getPov().zoom) {
-    //         prevZoom = panorama.getPov().zoom;
-    //         setTimeout(updateDummyImageFromGSV, 20);
-    //     }
-    // });
-
-    const inputShape = [1, 3, 640, 640];
+    const inputShape = [1, 3, IMAGE_SIZE, IMAGE_SIZE];
     const topk = 100;
     const iouThreshold = 0.45;
     const scoreThreshold = 0.3;
@@ -804,9 +871,9 @@ $(function() {
             // First let's go through all the markers and compute the distance between center of the box and all the 'translated' old markers of the same label type.
             // We find the closest marker and if it is within a certain distance, we consider it as the existing marker.
             // Note: we can't blindly compare with a distance as another marker of the same label type might be under the threshold but may not be the closest one and appear first in the array.
-            for (let j = 0; j < currentState.markers.length; j++) {
+            for (let j = 0; j < currentPanoState.markers.length; j++) {
 
-                const m = currentState.markers[j];
+                const m = currentPanoState.markers[j];
 
                 if (m.labelType === LABEL_TYPES[label]) {
 
@@ -983,9 +1050,20 @@ $(function() {
     function init() {
         missionStats.targetLocations = GIS_DATA.features.length;
 
-        // Init the currentState object.
-        resetCurrentState();
-        // updateCurrentStateLocation(panorama);
+        // Init the currentPanoState object.
+        resetCurrentPanoState();
+        resetCurrentLocationState();
+
+        // If the user has provided a idx, init the panorama to that location.
+        if (dataIDX > -1) {
+
+            const locationInfo = getLocationFromIdx(GIS_DATA, dataIDX);
+            let location = locationInfo.location;
+            let locationID = locationInfo.locationID;
+            updateCurrentStateLocation(locationID);
+
+            panorama.setPosition({lat: location[1], lng: location[0]});
+        }
     }
 
     init();
