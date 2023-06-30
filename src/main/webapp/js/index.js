@@ -901,7 +901,7 @@ $(function() {
     const inputShape = [1, 3, IMAGE_SIZE, IMAGE_SIZE];
     const topk = 100;
     const iouThreshold = 0.7;
-    const confidenceThreshold = 0.4;
+    const confidenceThreshold = 0.3;
 
     CVStats.iouThreshold = iouThreshold;
     CVStats.confidenceThreshold = confidenceThreshold;
