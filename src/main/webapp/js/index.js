@@ -515,17 +515,19 @@ $(function() {
             'name': 'label-' + marker.labelType + '-' + currentPanoState.location + '-' + panorama.getPano() + '-' + new Date().getTime() +'.jpg',
         }
 
+        d.dir = 'crops-' + sessionID + '/'; // TODO: this path separator should be handled better. It will break on Windows now.
+
         // Save a high-res version of the image.
         html2canvas($dummyImageContainer[0]).then(canvas => {
 
             if (marker.verificationState === HUMAN_VERIFICATION_STATE.VERIFIED_CORRECT) {
                 if (marker.isHumanPlaced) {
-                    d.dir = 'false-negative';
+                    d.dir += 'false-negative';
                 } else {
-                    d.dir = 'true-positive';
+                    d.dir += 'true-positive';
                 }
             } else if (marker.verificationState === HUMAN_VERIFICATION_STATE.VERIFIED_INCORRECT) {
-                d.dir = 'false-positive';
+                d.dir += 'false-positive';
             }
 
             d.b64 = canvas.toDataURL('image/jpeg', 1);
@@ -897,14 +899,16 @@ $(function() {
     const iouThreshold = 0.45;
     const scoreThreshold = 0.3;
 
-    function renderBoxes(predictedBoxes) {
+    // Renders the bounding boxes around objects.
+    // Handles scaling to match the panorama size.
+    function renderBoundingBoxes(predictedBoundingBoxes) {
 
         // We are going to re-render all the boxes. So, let's remove all the existing ones.
         $('.object-boundary:not(.template)').remove();
 
         // Go through all the boxes and render them.
-        for (let i = 0; i < predictedBoxes.length; i++) {
-            const box = predictedBoxes[i];
+        for (let i = 0; i < predictedBoundingBoxes.length; i++) {
+            const box = predictedBoundingBoxes[i];
             const [x, y, w, h] = box.bounding;
             const label = box.label;
             const probability = box.probability.toFixed(2); // We are interested in only 2 decimal places.
@@ -961,6 +965,12 @@ $(function() {
 
             $('.object-boundary-label-text', $objectBoundary).text(LABEL_TYPES[label]);
 
+            // If the bounding box is too close to the top edge of the screen, the label will be off the screen. So, we need to move it down.
+            if ($('.object-boundary-label', $objectBoundary).offset().top < 0) {
+                $('.object-boundary-label', $objectBoundary).css('top', '10px');
+            }
+
+
             // Restore the state if it is an existing marker.
             if (existingMarker) {
                 if (existingMarker.verificationState === HUMAN_VERIFICATION_STATE.VERIFIED_CORRECT) {
@@ -995,7 +1005,7 @@ $(function() {
             // the model in this example contains a single MatMul node
             // it has 2 inputs: 'a'(float32, 3x4) and 'b'(float32, 4x3)
             // it has 1 output: 'c'(float32, 3x3)
-            session = await ort.InferenceSession.create('./models/june-28.onnx');
+            session = await ort.InferenceSession.create('./models/june-30.onnx');
             nms = await ort.InferenceSession.create('./models/nms-yolov8.onnx');
 
         } catch (e) {
@@ -1053,12 +1063,12 @@ $(function() {
         const tensor = new ort.Tensor("float32", input.data32F, inputShape); // to ort.Tensor
         const config = new ort.Tensor("float32", new Float32Array([topk, iouThreshold, scoreThreshold])); // nms config tensor
         const { output0 } = await session.run({ images: tensor }); // run session and get output layer
-        const { selected } = await nms.run({ detection: output0, config: config }); // perform nms and filter boxes
+        const { selected } = await nms.run({ detection: output0, config: config }); // perform nms and filter boundingBoxes
 
         if (DEBUG_MODE)
             console.log(selected);
 
-        const boxes = [];
+        const boundingBoxes = [];
 
         // looping through output
         for (let idx = 0; idx < selected.dims[1]; idx++) {
@@ -1073,20 +1083,20 @@ $(function() {
                 (box[1] - 0.5 * box[3]) * yRatio, // upscale top
                 box[2] * xRatio, // upscale width
                 box[3] * yRatio, // upscale height
-            ]; // keep boxes in maxSize range
+            ]; // keep boundingBoxes in maxSize range
 
-            boxes.push({
+            boundingBoxes.push({
                 label: label,
                 probability: score,
                 bounding: [x, y, w, h], // upscale box
-            }); // update boxes to draw later
+            }); // update boundingBoxes to draw later
         }
 
-        // console.log(boxes);
+        // console.log(boundingBoxes);
 
-        renderBoxes(boxes); // Draw boxes
+        renderBoundingBoxes(boundingBoxes); // Draw boundingBoxes
 
-        if (boxes.length === 0) {
+        if (boundingBoxes.length === 0) {
             $('.status-indicator').text('No objects detected. Try moving the panorama or zooming in.').show();
         } else {
             $('.status-indicator').hide();

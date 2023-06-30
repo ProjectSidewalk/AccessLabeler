@@ -30,7 +30,7 @@ public class FileManager {
 
                 File dir = new File(baseDirPath + File.separator + dirName);
                 if (!dir.exists()) {
-                    dir.mkdir();
+                    dir.mkdirs();
                 }
             }
 
