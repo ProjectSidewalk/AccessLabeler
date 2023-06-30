@@ -78,9 +78,6 @@ $(function() {
     const DEBUG_MODE = get('debug') === '1';
 
 
-    // let lastPov;
-
-
     // All the label types
     const LABEL_TYPES = {
         0: 'seating',
@@ -314,12 +311,6 @@ $(function() {
         const markerID = optionalID ? optionalID : labelType + '-' + currentLocationState.labelTypeToMarkerCount[labelType];
 
         $marker.attr('data-id', markerID);
-
-        // lastPov = {
-        //     heading: pov.heading,
-        //     pitch: pov.pitch
-        // };
-
         $marker.addClass('marker-' + labelType);
 
         if (verificationState === HUMAN_VERIFICATION_STATE.NOT_VERIFIED) {
@@ -527,7 +518,16 @@ $(function() {
         // Save a high-res version of the image.
         html2canvas($dummyImageContainer[0]).then(canvas => {
 
-            d.dir = marker.verificationState === HUMAN_VERIFICATION_STATE.VERIFIED_CORRECT ? 'true-positive' : 'false-positive';
+            if (marker.verificationState === HUMAN_VERIFICATION_STATE.VERIFIED_CORRECT) {
+                if (marker.isHumanPlaced) {
+                    d.dir = 'false-negative';
+                } else {
+                    d.dir = 'true-positive';
+                }
+            } else if (marker.verificationState === HUMAN_VERIFICATION_STATE.VERIFIED_INCORRECT) {
+                d.dir = 'false-positive';
+            }
+
             d.b64 = canvas.toDataURL('image/jpeg', 1);
 
             $.ajax({
@@ -795,6 +795,14 @@ $(function() {
             currentPanoState.verifiedLabels.push(m);
 
             labelStats.nLabelsManuallyPlaced++;
+
+
+            if (saveVerifiedLabelCrops) {
+                const $dummyObjectBoundary = $('.object-boundary.template').clone().removeClass('template').addClass('confirmed').attr('data-id', m.id);
+                $dummyObjectBoundary.addClass('dummy-placed-marker');
+                $dummyObjectBoundary.css({'left': m.left, 'top': m.top});
+                saveScreenshotWithLabel($dummyObjectBoundary, m);
+            }
         }
 
         $('.next-location-button').click(function() {
@@ -838,9 +846,6 @@ $(function() {
         });
 
         $(document).on('mousedown', function () {
-            // if (!lastPov) {
-            //     lastPov = panorama.getPov();
-            // }
             isMouseDown = true;
         })
 
