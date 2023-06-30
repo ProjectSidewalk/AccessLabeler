@@ -74,6 +74,23 @@ body {
 
 .dummy-marker { position: absolute; height: 30px; width: 30px; background: red; border-radius: 50%; transform: translate(-50%, -50%); }
 
+.dummy-object-boundary { position: absolute; border: 2px solid transparent; }
+.dummy-object-boundary .object-boundary-label { display: none; }
+
+.dummy-object-boundary::after {
+    content: '';
+    border: 2px solid #38e038;
+    height: calc(100% + 20px);
+    width: calc(100% + 20px);
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+}
+
+.dummy-object-boundary.confirmed::after { border-color: #94F086; }
+.dummy-object-boundary.denied::after { border-color: red; }
+
 .overlay { position: absolute; height: 100%; width: 100%; top: 0; left: 0; z-index: 2; pointer-events: none; }
 
 .screen-capture { position: absolute; bottom: 0; height: 50px; display: flex; align-content: center; justify-content: center; background: burlywood; width: 100%; padding: 10px; cursor: pointer; }

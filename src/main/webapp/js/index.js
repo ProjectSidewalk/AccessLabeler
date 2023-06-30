@@ -53,6 +53,8 @@ $(function() {
 
     let dataIDX = get('idx') ? parseInt(get('idx')) : -1;
 
+    const saveVerifiedLabelCrops = get('saveVerifiedLabelCrops') === '1';
+
     let missionID = 'test-mission-id';
     const sessionID = get('sessionID') ? get('sessionID') : new Date().getTime().toString(); // Set only once.
 
@@ -503,6 +505,43 @@ $(function() {
         labelStats.locationToVerifiedLabels[currentPanoState.location] = labelStats.locationToVerifiedLabels[currentPanoState.location].concat(currentPanoState.verifiedLabels);
     }
 
+    // Saves a screenshot with an outline around the object (indicated by the marker) in true-positive or false-potive directory.
+    function saveScreenshotWithLabel($objectBoundary, marker) {
+        $('.dummy-object-boundary').remove();
+
+        const $objectBoundaryClone = $objectBoundary.clone();
+        $objectBoundaryClone.removeClass('object-boundary').addClass('dummy-object-boundary');
+
+        if (marker.verificationState === HUMAN_VERIFICATION_STATE.VERIFIED_CORRECT) {
+            $objectBoundaryClone.addClass('confirmed');
+        } else if (marker.verificationState === HUMAN_VERIFICATION_STATE.VERIFIED_INCORRECT) {
+            $objectBoundaryClone.addClass('denied');
+        }
+
+        $dummyImageContainer.append($objectBoundaryClone);
+
+        const d = {
+            'name': 'label-' + marker.labelType + '-' + currentPanoState.location + '-' + panorama.getPano() + '-' + new Date().getTime() +'.jpg',
+        }
+
+        // Save a high-res version of the image.
+        html2canvas($dummyImageContainer[0]).then(canvas => {
+
+            d.dir = marker.verificationState === HUMAN_VERIFICATION_STATE.VERIFIED_CORRECT ? 'true-positive' : 'false-positive';
+            d.b64 = canvas.toDataURL('image/jpeg', 1);
+
+            $.ajax({
+                type: "POST",
+                url: "saveImage.jsp",
+                data: d,
+                contentType: "application/x-www-form-urlencoded; charset=UTF-8",
+                success: function(data){
+                    console.log(data);
+                }
+            });
+        });
+    }
+
     /**
      * Sets up the event handlers for all the UI elements. This is called only once when the page is loaded.
      */
@@ -652,7 +691,11 @@ $(function() {
 
             // Add the marker to the current state. We will later log this info.
             const markerClone = structuredClone(marker); // This is a deep clone using new API. We might have to revisit this for better support.
+            markerClone.timestamp = new Date().getTime();
             currentPanoState.verifiedLabels.push(markerClone);
+
+            if (saveVerifiedLabelCrops)
+                saveScreenshotWithLabel($closestObjectBoundary, marker);
 
             updateLabelStats(marker);
         }
@@ -671,7 +714,11 @@ $(function() {
 
             // Add the marker to the current state. We will later log this info.
             const markerClone = structuredClone(marker); // This is a deep clone using new API. We might have to revisit this for better support.
+            markerClone.timestamp = new Date().getTime();
             currentPanoState.verifiedLabels.push(markerClone);
+
+            if (saveVerifiedLabelCrops)
+                saveScreenshotWithLabel($closestObjectBoundary, marker);
 
             updateLabelStats(marker);
         }
@@ -926,7 +973,10 @@ $(function() {
             const marker = placeMarker(existingMarker ? existingMarker.id : null, centerX, centerY, LABEL_TYPES[label], existingMarker ? existingMarker.verificationState : HUMAN_VERIFICATION_STATE.NOT_VERIFIED, false, probability, 'cv-suggested');
             $objectBoundary.attr('data-id', marker.id);
 
+            // These fields should not be updated at any point.
             marker.originalBoundingBox = [scaledX, scaledY, scaledW, scaledH];
+            marker.originalPitch = panorama.getPov().pitch;
+            marker.originalHeading = panorama.getPov().heading;
         }
     }
 
@@ -940,7 +990,7 @@ $(function() {
             // the model in this example contains a single MatMul node
             // it has 2 inputs: 'a'(float32, 3x4) and 'b'(float32, 4x3)
             // it has 1 output: 'c'(float32, 3x3)
-            session = await ort.InferenceSession.create('./models/jan-27-10am.onnx');
+            session = await ort.InferenceSession.create('./models/june-28.onnx');
             nms = await ort.InferenceSession.create('./models/nms-yolov8.onnx');
 
         } catch (e) {
