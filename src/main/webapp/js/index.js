@@ -48,8 +48,8 @@ $(function() {
 
     let currentLabelType = null;
 
-    let startTime = null;
-    let endTime = null;
+    let inferenceStartTime = null;
+    let inferenceEndTime = null;
 
     let dataIDX = get('idx') ? parseInt(get('idx')) : -1;
 
@@ -104,10 +104,13 @@ $(function() {
     };
 
     // The single object to track all the stats related to the computer vision in the current session.
+    // This will be updated later.
     let CVStats = {
+        'iouThreshold': 0.5,
+        'confidenceThreshold': 0.5,
+
         'totalInferenceTime': 0,
-        'totalInferenceCount': 0,
-        'averageInferenceTime': 0
+        'totalInferenceCount': 0
     }
 
 
@@ -442,6 +445,7 @@ $(function() {
             'missionID': missionID,
             'sessionID': sessionID,
             'missionStats': missionStats,
+            'CVStats': CVStats,
             'labelStats': labelStats,
             'timestamp': new Date().getTime(),
             'dataIDX': dataIDX      // Logging to manage in case of a crash. We might not be able to take all the screenshots in one go.
@@ -896,8 +900,11 @@ $(function() {
 
     const inputShape = [1, 3, IMAGE_SIZE, IMAGE_SIZE];
     const topk = 100;
-    const iouThreshold = 0.45;
-    const scoreThreshold = 0.3;
+    const iouThreshold = 0.7;
+    const confidenceThreshold = 0.4;
+
+    CVStats.iouThreshold = iouThreshold;
+    CVStats.confidenceThreshold = confidenceThreshold;
 
     // Renders the bounding boxes around objects.
     // Handles scaling to match the panorama size.
@@ -1053,7 +1060,7 @@ $(function() {
 
     async function analyzeImageAndShowSuggestions() {
 
-        startTime = new Date().getTime();
+        inferenceStartTime = new Date().getTime();
 
         const image = $('.dummy-image')[0];
 
@@ -1061,7 +1068,7 @@ $(function() {
         const [input, xRatio, yRatio] = preprocessing(image, modelWidth, modelHeight);
 
         const tensor = new ort.Tensor("float32", input.data32F, inputShape); // to ort.Tensor
-        const config = new ort.Tensor("float32", new Float32Array([topk, iouThreshold, scoreThreshold])); // nms config tensor
+        const config = new ort.Tensor("float32", new Float32Array([topk, iouThreshold, confidenceThreshold])); // nms config tensor
         const { output0 } = await session.run({ images: tensor }); // run session and get output layer
         const { selected } = await nms.run({ detection: output0, config: config }); // perform nms and filter boundingBoxes
 
@@ -1102,8 +1109,11 @@ $(function() {
             $('.status-indicator').hide();
         }
 
-        endTime = new Date().getTime();
-        console.log('Time taken: ' + (endTime - startTime) + 'ms');
+        inferenceEndTime = new Date().getTime();
+        console.log('Time taken: ' + (inferenceEndTime - inferenceStartTime) + 'ms');
+
+        CVStats.totalInferenceTime += (inferenceEndTime - inferenceStartTime);
+        CVStats.totalInferenceCount += 1;
     }
 
     function setupUI() {
