@@ -866,7 +866,7 @@ $(function() {
 
         $(document).on('mousemove', function (e) {
             if (!isMarking && isMouseDown) {
-                moveMarkers();
+                    moveMarkers();
             }
 
             if (isMarking) {
@@ -909,6 +909,10 @@ $(function() {
     // Renders the bounding boxes around objects.
     // Handles scaling to match the panorama size.
     function renderBoundingBoxes(predictedBoundingBoxes) {
+
+        function removeFocusOnLabel() {
+            $('.object-boundary').removeClass('unfocused');
+        }
 
         // We are going to re-render all the boxes. So, let's remove all the existing ones.
         $('.object-boundary:not(.template)').remove();
@@ -999,6 +1003,16 @@ $(function() {
             marker.originalBoundingBox = [scaledX, scaledY, scaledW, scaledH];
             marker.originalPitch = panorama.getPov().pitch;
             marker.originalHeading = panorama.getPov().heading;
+
+
+            // When the user hovers on a label we want all the other labels to be unfocused.
+            // Note: the event handler needs to be added here as the $objectBoundary is not available until it is rendered and will be removed and re-rendered on the fly.
+            $objectBoundary.on('mouseenter', function(e) {
+                $objectBoundary.siblings().addClass('unfocused');
+            }).on('mouseleave', function(e) {
+                removeFocusOnLabel();
+            });
+
         }
     }
 

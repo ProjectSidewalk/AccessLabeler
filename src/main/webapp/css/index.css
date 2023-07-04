@@ -151,7 +151,7 @@ body {
 /*.box { position: absolute; background: rgba(255, 200, 0, 0.15); z-index: 1; }*/
 /*.box.bench { background: rgba(220, 20, 60, 0.35); border: 2px solid crimson; }*/
 
-.object-boundary { z-index: 10; border-radius: 3px; position: absolute; pointer-events: none; outline: rgba(255, 255, 0, 0.75) dashed 2.5px; transition: outline-color 0.2s; filter: drop-shadow(4px 4px 20px #000000); }
+.object-boundary { z-index: 10; border-radius: 3px; position: absolute; pointer-events: none; outline: rgba(255, 255, 0, 0.75) dashed 2.5px; transition: all 0.4s; filter: drop-shadow(4px 4px 20px #000000); }
 .object-boundary:hover { opacity: 1; z-index: 11; /* Higher z-index upon hover so that overlapping elements can be clicked upon. */ }
 
 /*.object-boundary-center { position: absolute; height: 10px; width: 10px; background: red; border-radius: 100px; }*/
@@ -179,6 +179,8 @@ body {
 
 .object-boundary.confirmed { outline-color: #94F086; outline-style: solid; }
 .object-boundary.denied { opacity: 0.1; }
+
+.object-boundary.unfocused { opacity: 0.6; filter: grayscale(1); }
 
 
 .mini-label-icon-for-cursor { position: absolute; width: 30px; height: 30px; pointer-events: none; z-index: 100; border-radius: 50%; display: none; justify-content: center; align-items: center; }
