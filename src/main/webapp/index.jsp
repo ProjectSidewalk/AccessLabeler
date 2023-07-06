@@ -18,7 +18,9 @@
     <script src="https://docs.opencv.org/4.7.0/opencv.js"></script>
 
 <%--    <script src="js/data-selected.js"></script>--%>
-    <script src="js/data-KCGIS-100-random.js"></script>
+<%--    <script src="js/data-KCGIS-100-random.js"></script>--%>
+<%--    <script src="js/data-ASSETS-demo-video.js"></script>--%>
+    <script src="js/data-KCGIS-200-random.js"></script>
 
     <script src="js/labelsDescriptor.js"></script>
     <script src="js/utils.js"></script>

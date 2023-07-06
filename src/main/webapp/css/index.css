@@ -178,9 +178,9 @@ body {
 .object-boundary-incorrect .object-boundary-label-icon:hover { fill: lightsalmon; } /* The label is removed if denied so no special directive for the icon needed. */
 
 .object-boundary.confirmed { outline-color: #94F086; outline-style: solid; }
-.object-boundary.denied { opacity: 0.1; }
+.object-boundary.denied { display: none; }
 
-.object-boundary.unfocused { opacity: 0.6; filter: grayscale(1); }
+.object-boundary.unfocused:not(.denied) { opacity: 0.6; filter: grayscale(1); }
 
 
 .mini-label-icon-for-cursor { position: absolute; width: 30px; height: 30px; pointer-events: none; z-index: 100; border-radius: 50%; display: none; justify-content: center; align-items: center; }
