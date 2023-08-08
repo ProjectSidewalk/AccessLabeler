@@ -1,4 +1,6 @@
-<%@ page import="static com.ps.accesslabeler.FileManager.saveFile" %><%--
+<%@ page import="static com.ps.accesslabeler.FileManager.saveFile" %>
+<%@ page import="com.ps.accesslabeler.FileManager" %>
+<%@ page import="java.io.File" %><%--
   Created by IntelliJ IDEA.
   User: minchu
   Date: 2/27/23
@@ -10,5 +12,13 @@
     String fileName = request.getParameter("name");
     String b64Data = request.getParameter("b64");
 
-    saveFile(b64Data, fileName);
+    String directory = FileManager.IMAGE_DIR;
+
+    String dirParam = request.getParameter("dir");
+
+    if (dirParam != null && dirParam.length() > 0) {
+        directory = directory + File.separator + dirParam;
+    }
+
+    saveFile(b64Data, fileName, directory);
 %>
