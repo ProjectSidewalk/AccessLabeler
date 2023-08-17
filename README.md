@@ -1,6 +1,12 @@
 # BusStopCV
 
-## Set up 
+This is the software repository for the BusStopCV project. Please cite as:
+
+> Minchu Kulkarni, Chu Li, Jaye Ahn, Katrina Ma, Zhihan Zhang, Michael Saugstad, Yochai Eisenberg, Valerie Novack, Brent Chamberlain, Jon E. Froehlich. 2023. BusStopCV: A Real-time AI Assistant for Labeling Bus Stop Accessibility Features in Streetscape Imagery. In _The 25th International ACM SIGACCESS Conference on Computers and Accessibility (ASSETS ’23)_, October 22–25, 2023, New York, NY, USA. ACM, New York, NY, USA, 5 pages
+
+## Developer Setup
+
+BusStopCV is built in JavaScript (frontend) and Java (backend) with a custom-trained YOLOv8 model for computer vision.
 
 **1. Clone repository**
 
