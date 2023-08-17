@@ -19,7 +19,7 @@ Follow these stpes to install Apache Tomcat using the terminal:
 
 3. Navigate to the Tomcat `bin` directory. Running `./startup.sh` within this directory will start Tomcat. 
 
-4. Open a web browser and visit `http://localhost:8080/`. If Tomcat is correctly installed and started, the Tomcat homepage should be visible
+4. Open a web browser and visit http://localhost:8080/. If Tomcat is correctly installed and started, the Tomcat homepage should be visible
 
 5. To stop Tomcat run `./shutdown.sh` within the `bin` directory of your Tomcat directory
 
@@ -33,8 +33,8 @@ Install Apache Maven by running `sudo apt install maven` in the terminal
 
 **2. Create a clean maven installation of the project:** Run the command `mvn clean install` within the BusStopCV directory to create a clean maven installation of the project
 
-**3. Copy .war file to webapps directory:** Run the command `cp target/accesslabeler-1.0-SNAPSHOT.war path_to_your_tomcat/webapps/accesslabeler` to copy the generated .war file to your Tomcat webapps directory
+**3. Copy .war file to webapps directory:** Run the command `cp target/accesslabeler-1.0-SNAPSHOT.war path_to_your_tomcat/webapps/accesslabeler.war` to copy the generated .war file to your Tomcat webapps directory
 
-**4. Open application on browser:** Visit `http://localhost:8080/accesslabeler` to access the BusStopCV web application. 
+**4. Open application on browser:** Visit http://localhost:8080/accesslabeler to access the BusStopCV web application. 
 
 **5. Stop Tomcat:** Once finished with the web application, shut down Tomcat by navigating to the Tomcat `bin` directory and running the `shutdown.sh` script
