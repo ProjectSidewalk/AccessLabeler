@@ -362,10 +362,11 @@
             }, function () {
                 panorama.setPov(panorama.getPhotographerPov());
             });
+
+        console.log('triggering event');
+        $(document).trigger('pano-initialized');
     }
 </script>
-<script async defer
-        src="https://maps.googleapis.com/maps/api/js?key=AIzaSyBmlVct28ooFui9xThE2ZSgugQ9gEI2cZo&callback=initMap">
-</script>
+<script async defer src="https://maps.googleapis.com/maps/api/js?key=AIzaSyBmlVct28ooFui9xThE2ZSgugQ9gEI2cZo&callback=initMap"></script>
 </body>
 </html>

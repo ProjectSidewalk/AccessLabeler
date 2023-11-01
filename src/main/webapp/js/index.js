@@ -1155,18 +1155,32 @@ $(function() {
         }
     }
 
-    init();
+    function main() {
+        init();
 
-    setupUI();
+        setupUI();
 
-    setupEventHandlers();
+        setupEventHandlers();
 
-    calculateGSVScale();
-    loadModels();
+        calculateGSVScale();
+        loadModels();
 
-    updateStatsUI();
+        updateStatsUI();
 
-    // Simulating a click right upon loading as we want to show the labeling interface by default.
-    $('.show-labels-toolbar').click();
+        // Simulating a click right upon loading as we want to show the labeling interface by default.
+        $('.show-labels-toolbar').click();
+    }
+
+    // Google Streetview loads async through a callback function. So, when we reach this point, the pano may or may
+    // not be initialized.
+    // If it is initialized, we can directly call main() which will setup the UI and event handlers etc.
+    // Otherwise, we will attach an event listener to the document itself and wait for the pano to be initialized.
+    // The callback function triggers this event and we can then call main().
+    if (panorama) {
+        main();
+    } else {
+        $(document).on('pano-initialized', main);
+    }
+
 });
 
