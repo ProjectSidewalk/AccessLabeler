@@ -10,13 +10,25 @@ import java.util.Base64;
 
 public class FileManager {
 
-    private static final String BASE_DIR = ".nsf-convergence";
+    private static final String BASE_DIR = ".ps-cv";
 
     public static final String IMAGE_DIR = "images";
 
     public static final String LOGS_DIR = "logs";
 
-    public static boolean saveFile(String data, String name, String dirName) {
+    private static String getFileSizeMegaBytes(File file) {
+        return (double) file.length() / (1024 * 1024) + " mb";
+    }
+
+    private static double getFileSizeKiloBytes(File file) {
+        return (double) file.length() / 1024;
+    }
+
+    private static String getFileSizeBytes(File file) {
+        return file.length() + " bytes";
+    }
+
+    public static boolean saveFile(String data, String fileName, String dirName) {
         try {
 
             String baseDirPath = System.getProperty("user.home") + File.separator + BASE_DIR;
@@ -34,7 +46,16 @@ public class FileManager {
                 }
             }
 
-            File output = new File(baseDirPath + File.separator + File.separator + dirName + File.separator + name);
+            File output = new File(baseDirPath + File.separator + File.separator + dirName + File.separator + fileName);
+
+            // Do not overwrite if we already have a good crop
+            // But sometimes GSV API fails, in which case we must have a fully black image which is under 30KB.
+            // So if the file is over 30KB, we can assume that it is a good crop. Otherwise, we overwrite.
+            if (output.exists() && output.isFile()) {
+                if (getFileSizeKiloBytes(output) > 30) {
+                    return false;
+                }
+            }
 
             // The directory to save image could contain a subdirectory denoting high or low res.
             // So don't check for equality, check if it contains the directory name.

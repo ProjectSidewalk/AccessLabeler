@@ -3,11 +3,14 @@
 <head>
 
     <link rel="stylesheet" href="css/index.css">
+    <link rel="stylesheet" href="css/index-auto.css">
 
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/css/bootstrap.min.css" integrity="sha384-rbsA2VBKQhggwzxH7pPCaAqO46MgnOM80zW1RWuH61DGLwZJEdK2Kadq2F9CUG65" crossorigin="anonymous">
 
     <!-- Using jsDelivr -->
 <%--    <script src="https://cdn.jsdelivr.net/npm/@xenova/transformers/dist/transformers.min.js"></script>--%>
+
+    <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyBmlVct28ooFui9xThE2ZSgugQ9gEI2cZo"></script>
 
     <script>
         var panorama;
@@ -16,6 +19,7 @@
     <script src="https://code.jquery.com/jquery-3.6.3.min.js" integrity="sha256-pvPw+upLPUjgMXY0G+8O0xUf+/Im1MZjXxxgOcBQBXU=" crossorigin="anonymous"></script>
     <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
 
+    <script src="js/labelData-pittsburgh.js"></script>
     <script src="js/index-auto.js"></script>
 </head>
 <body style="margin: 0;">
@@ -108,34 +112,8 @@
 <%--    Take a screenshot--%>
 <%--</div>--%>
 
-<script>
-
-    function initMap() {
-
-        HTMLCanvasElement.prototype.getContext = function(origFn) {
-            return function(type, attributes) {
-                if (type === 'webgl') {
-                    attributes = Object.assign({}, attributes, {
-                        preserveDrawingBuffer: true,
-                    });
-                }
-                return origFn.call(this, type, attributes);
-            };
-        }(HTMLCanvasElement.prototype.getContext);
-
-        panorama = new google.maps.StreetViewPanorama(
-            document.getElementById('panorama'),
-            {
-                position: {lat: 37.869224495225126, lng: -122.25510802860369},
-                pov: {heading: 0, pitch: 0},
-                zoom: 1
-            }, function () {
-                panorama.setPov(panorama.getPhotographerPov());
-            });
-    }
-</script>
-<script async defer
-        src="https://maps.googleapis.com/maps/api/js?key=AIzaSyBmlVct28ooFui9xThE2ZSgugQ9gEI2cZo&callback=initMap">
-</script>
+<%--<script async defer--%>
+<%--        src="https://maps.googleapis.com/maps/api/js?key=AIzaSyBmlVct28ooFui9xThE2ZSgugQ9gEI2cZo&callback=initMap">--%>
+<%--</script>--%>
 </body>
 </html>
