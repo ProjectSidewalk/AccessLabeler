@@ -11,8 +11,8 @@ $(function() {
     }
 
 
-    const START_IDX = 99;
-    const N_PANOS_TO_FETCH = 2000;
+    const START_IDX = 0;
+    const N_PANOS_TO_FETCH = 13200;
 
     // var $panorama = $('#panorama'); // TODO: Check if this is available from the start. What happens if it takes time to load?
     const $panoramaContainer = $('.panorama-container'); // T
@@ -65,7 +65,9 @@ $(function() {
             {
                 position: {lat: 37.869224495225126, lng: -122.25510802860369},
                 pov: {heading: 0, pitch: 0},
-                zoom: 1
+                zoom: 1,
+                showRoadLabels: false,
+                linksControl: false
             }, function () {
                 panorama.setPov(panorama.getPhotographerPov());
             });
@@ -85,28 +87,55 @@ $(function() {
     }
 
     async function savePanos () {
-        for (let i= START_IDX; i < N_PANOS_TO_FETCH; i++){
+        for (let i= START_IDX; i < N_PANOS_TO_FETCH; i++) {
 
             const labelData = LABEL_DATA[i];
-            const labelID = labelData.LabelID;
-            const labelTypeID = labelData.LabelTypeID;
-            const panoID = labelData.PanoID;
-            const heading = labelData.Heading;
-            const pitch = labelData.Pitch;
-            const zoom = labelData.Zoom;
-            const fov = labelData.FOV;
-            const city = labelData.City;
+
+            let labelID;
+            let labelTypeID;
+            let panoID;
+            let heading;
+            let pitch;
+            let zoom;
+            let fov;
+            let city;
+
+            if (labelData.hasOwnProperty('LabelID')) { // We have data in two formats. This is the old format.
+                labelID = labelData.LabelID;
+                labelTypeID = labelData.LabelTypeID;
+                panoID = labelData.PanoID;
+                heading = labelData.Heading;
+                pitch = labelData.Pitch;
+                zoom = labelData.Zoom;
+                fov = labelData.FOV;
+                city = labelData.City;
+            } else {
+                labelID = labelData.label_id;
+                labelTypeID = labelData.label_type;
+                panoID = labelData.gsv_panorama_id;
+                heading = labelData.heading;
+                pitch = labelData.pitch;
+                zoom = labelData.zoom;
+                fov = labelData.fov;
+                city = labelData.city;
+            }
+
+
+            if (labelTypeID && labelTypeID != 'CurbRamp') {
+                continue;
+            }
 
             console.log('Loading panorama ' + i + ' of ' + N_PANOS_TO_FETCH + ' with labelID ' + labelID + ' and labelTypeID ' + labelTypeID);
 
             loadPano(panoID, pitch, heading, zoom);
 
             setTimeout(function() {
-                saveGSVScreenshot('gsv-' + city + '-' + labelID + '-' + labelTypeID + '.jpg', 'crops-' + city);
+                saveGSVScreenshot('gsv-' + city + '-' + labelID + '-' + labelTypeID + '.jpg', 'crops-' + city + '-' + labelTypeID);
             }, 4000);
 
             await delay(4500);
         }
     }
-    savePanos();
+    // savePanos();
+    loadPano('HgHahHJG2_F61YXdbdGdKw', 0, 300, 1);
 })
