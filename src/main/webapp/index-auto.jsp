@@ -14,12 +14,24 @@
 
     <script>
         var panorama;
+
+        window.addEventListener('error',function(error, url, line) {
+            console.log(error);
+            console.log(url);
+            console.log(line);
+
+            return true;
+
+            // logData.unknownErrors.push(error);
+        });
+
     </script>
 
     <script src="https://code.jquery.com/jquery-3.6.3.min.js" integrity="sha256-pvPw+upLPUjgMXY0G+8O0xUf+/Im1MZjXxxgOcBQBXU=" crossorigin="anonymous"></script>
     <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
 
     <script src="js/labelData-seattle-labelled.js"></script>
+    <script src="js/labelData-seattle-all.js"></script>
     <script src="js/index-auto.js"></script>
 </head>
 <body style="margin: 0;">
