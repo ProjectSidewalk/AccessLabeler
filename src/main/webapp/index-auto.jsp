@@ -32,6 +32,7 @@
 
     <script src="js/labelData-seattle-labelled.js"></script>
     <script src="js/labelData-seattle-all.js"></script>
+    <script src="js/labelData-seattle-validated.js"></script>
     <script src="js/index-auto.js"></script>
 </head>
 <body style="margin: 0;">

@@ -11,7 +11,7 @@ $(function() {
     }
 
     const START_IDX = 0;
-    const N_PANOS_TO_FETCH = LABEL_DATA.length;
+    const N_PANOS_TO_FETCH = LABEL_DATA3.length;
 
     let service = null;
 
@@ -36,20 +36,22 @@ $(function() {
     const LABEL_TYPE = {
         OBSTACLE: 'obstacle',
         SIGNAL: 'signal',
-        CROSSWALK: 'crosswalk'
+        CROSSWALK: 'crosswalk',
+        SURFACEPROBLEM: 'surfaceproblem',
+        CURBRAMP: 'curbramp'
     }
 
     const logData = {
         'datasetName': 'labelData-seattle-labelled.js',
-        'experimentID': CITY.SEATTLE + '-' + LABEL_TYPE.CROSSWALK,
+        'experimentID': CITY.SEATTLE + '-' + LABEL_TYPE.OBSTACLE,
         'failedPanos': [], // We checked directly that this is expired
         'succeededPanos': [], // Successfully fetched
         'expiredPanos': [], // ProjectSidewalk knows it is expired
+        'unknownErrors': [], // Some other error happened
         'failedPanoCount': 0,
         'succeededPanoCount': 0,
         'expiredPanoCount': 0,
         'unknownErrorCount': 0,
-        'unknownErrors': [] // Some other error happened
     }
 
     // var $panorama = $('#panorama'); // TODO: Check if this is available from the start. What happens if it takes time to load?
@@ -163,7 +165,7 @@ $(function() {
 
                     setTimeout(function() {
                         saveGSVScreenshot('gsv-' + city + '-' + labelID + '-' + labelTypeID + '.jpg', 'crops-' + city + '-' + labelTypeID);
-                    }, 4000);
+                    }, 5000);
                 }
             }
         })
@@ -191,7 +193,7 @@ $(function() {
 
         for (let i= START_IDX; i < N_PANOS_TO_FETCH; i++) {
 
-            const labelData = LABEL_DATA[i];
+            const labelData = LABEL_DATA3[i];
 
             let labelID;
             let labelTypeID;
@@ -223,11 +225,11 @@ $(function() {
                 city = labelData.city;
             }
 
-            // if ((labelID != 9905)) {
+            // if ((labelID != 100644) && (labelID != 100648)) {
             //     continue;
             // }
 
-            if ((labelTypeID != 'Crosswalk')) {
+            if ((labelTypeID != 3)) {
                continue;
             }
 
@@ -248,7 +250,7 @@ $(function() {
 
             loadPano(city, labelID, labelTypeID, panoID, pitch, heading, zoom);
 
-            await delay(4000);
+            await delay(6000);
 
             postLogData();
         }
