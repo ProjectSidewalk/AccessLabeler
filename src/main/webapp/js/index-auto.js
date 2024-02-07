@@ -11,7 +11,8 @@ $(function() {
     }
 
     const START_IDX = 0;
-    const N_PANOS_TO_FETCH = LABEL_DATA3.length;
+    const N_PANOS_TO_FETCH = 0;
+    // const N_PANOS_TO_FETCH = LABEL_DATA.length;
 
     let service = null;
 
@@ -43,7 +44,7 @@ $(function() {
 
     const logData = {
         'datasetName': 'labelData-seattle-labelled.js',
-        'experimentID': CITY.SEATTLE + '-' + LABEL_TYPE.OBSTACLE,
+        'experimentID': CITY.SEATTLE + '-' + LABEL_TYPE.SURFACEPROBLEM,
         'failedPanos': [], // We checked directly that this is expired
         'succeededPanos': [], // Successfully fetched
         'expiredPanos': [], // ProjectSidewalk knows it is expired
@@ -52,6 +53,7 @@ $(function() {
         'succeededPanoCount': 0,
         'expiredPanoCount': 0,
         'unknownErrorCount': 0,
+        'repeat': 0,
     }
 
     // var $panorama = $('#panorama'); // TODO: Check if this is available from the start. What happens if it takes time to load?
@@ -165,7 +167,7 @@ $(function() {
 
                     setTimeout(function() {
                         saveGSVScreenshot('gsv-' + city + '-' + labelID + '-' + labelTypeID + '.jpg', 'crops-' + city + '-' + labelTypeID);
-                    }, 5000);
+                    }, 4500);
                 }
             }
         })
@@ -191,9 +193,17 @@ $(function() {
         // let Crosswalk = 0;
         // let Signal = 0;
 
+        const fs = require("fs");
+        let dir_name = "/Users/projectsidewalk-alex/.ps-cv/images/crops-seattle-SurfaceProblem"
+        let fetchedSet = fs.readdirSync(dir_name);
+
+        fetchedSet.forEach((file) => {
+            console.log("File: ", file);
+        })
+
         for (let i= START_IDX; i < N_PANOS_TO_FETCH; i++) {
 
-            const labelData = LABEL_DATA3[i];
+            const labelData = LABEL_DATA[i];
 
             let labelID;
             let labelTypeID;
@@ -229,7 +239,7 @@ $(function() {
             //     continue;
             // }
 
-            if ((labelTypeID != 3)) {
+            if ((labelTypeID != 'SurfaceProblem')) {
                continue;
             }
 
