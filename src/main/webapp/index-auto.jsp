@@ -19,7 +19,7 @@
         var city = 'seattle';
         var labelTypeID = 'Obstacle';
         var dirName = 'crops-' + city + '-' + labelTypeID;
-        const fetchedPanos = <%=FileManager.getFilesInDirectory("crops-seattle-Obstacle")%>;
+        const previouslyFetchedPanos = <%=FileManager.getFilesInDirectory("crops-seattle-Obstacle")%>;
 
         window.addEventListener('error',function(error, url, line) {
             console.log(error);
