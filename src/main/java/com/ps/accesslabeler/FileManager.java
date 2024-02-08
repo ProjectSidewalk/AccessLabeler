@@ -6,6 +6,7 @@ import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.Base64;
 
 public class FileManager {
@@ -26,6 +27,31 @@ public class FileManager {
 
     private static String getFileSizeBytes(File file) {
         return file.length() + " bytes";
+    }
+
+    /**
+     * Returns the list of files in a directory in the form of an array string.
+     * It can be injected on a webpage as a JavaScript array.
+     * @param dirName Name of the crop directory. Should not contain the base directory and 'images' directory in the path.
+     * @return
+     */
+    public static String getFilesInDirectory(String dirName) {
+        String baseDirPath = System.getProperty("user.home") + File.separator + BASE_DIR + File.separator + IMAGE_DIR;
+        File dir = new File(baseDirPath + File.separator + dirName);
+        File[] files = dir.listFiles();
+
+        if (files == null || files.length == 0) {
+            return "No files found in " + dirName;
+        }
+
+        StringBuilder result = new StringBuilder();
+        result.append("[");
+        for (File file : files) {
+            result.append("'").append(file.getName()).append("'").append(",");
+        }
+        result.append("]");
+
+        return result.toString();
     }
 
     public static boolean saveFile(String data, String fileName, String dirName) {
