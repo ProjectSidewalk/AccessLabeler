@@ -11,8 +11,7 @@ $(function() {
     }
 
     const START_IDX = 0;
-    const N_PANOS_TO_FETCH = 0;
-    // const N_PANOS_TO_FETCH = LABEL_DATA.length;
+    const N_PANOS_TO_FETCH = LABEL_DATA.length;
 
     let service = null;
 
@@ -44,7 +43,7 @@ $(function() {
 
     const logData = {
         'datasetName': 'labelData-seattle-labelled.js',
-        'experimentID': CITY.SEATTLE + '-' + LABEL_TYPE.SURFACEPROBLEM,
+        'experimentID': CITY.SEATTLE + '-' + LABEL_TYPE.OBSTACLE,
         'failedPanos': [], // We checked directly that this is expired
         'succeededPanos': [], // Successfully fetched
         'expiredPanos': [], // ProjectSidewalk knows it is expired
@@ -193,14 +192,6 @@ $(function() {
         // let Crosswalk = 0;
         // let Signal = 0;
 
-        const fs = require("fs");
-        let dir_name = "/Users/projectsidewalk-alex/.ps-cv/images/crops-seattle-SurfaceProblem"
-        let fetchedSet = fs.readdirSync(dir_name);
-
-        fetchedSet.forEach((file) => {
-            console.log("File: ", file);
-        })
-
         for (let i= START_IDX; i < N_PANOS_TO_FETCH; i++) {
 
             const labelData = LABEL_DATA[i];
@@ -239,7 +230,7 @@ $(function() {
             //     continue;
             // }
 
-            if ((labelTypeID != 'SurfaceProblem')) {
+            if ((labelTypeID != 'Obstacle')) {
                continue;
             }
 
