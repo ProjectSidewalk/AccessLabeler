@@ -2,22 +2,18 @@
 
 $(function() {
 
-    // Captures the data and state at a particular 'panorama'.
-    // All of these should be reset when the user moves to a new location.
-    const currentPanoState = {
-        location: '',       // todo: update
-        markers: [],        // all markers including the non verified ones.
-        verifiedLabels: [], // only verified labels.
-    }
-
     const START_IDX = 0;
     const N_PANOS_TO_FETCH = 2000;
     // const N_PANOS_TO_FETCH = LABEL_DATA.length;
 
-    let service = null;
+    let googleMapsService = null;
 
+    // Enum for all the citites we are handling right now.
     const CITY = {
-        SEATTLE: 'seattle'
+        SEATTLE: 'seattle',
+        ORADELL: 'oradell',
+        PITTSBURGH: 'pittsburgh',
+        CHICAGO: 'chicago',
     }
 
     const LABEL_TYPE = {
@@ -28,6 +24,7 @@ $(function() {
         CURBRAMP: 'curbramp'
     }
 
+    // todo: add documentation and clearly and concisely mention what these fields capture. Maybe add a few examples.
     const logData = {
         'datasetName': 'labelData-seattle-labelled.js',
         'experimentID': CITY.SEATTLE + '-' + LABEL_TYPE.OBSTACLE,
@@ -126,7 +123,7 @@ $(function() {
                 panorama.setPov(panorama.getPhotographerPov());
             });
 
-        service = new google.maps.StreetViewService();
+        googleMapsService = new google.maps.StreetViewService();
 
     }
 
@@ -221,35 +218,19 @@ $(function() {
                continue;
             }
 
-            // Check if crop already exists
-            let fileName = 'gsv-' + city + '-' + labelID + '-' + labelTypeID + '.jpg';
-            for (let k = 0; k < previouslyFetchedPanosSeattle.length; k++) {
-                if (fileName == previouslyFetchedPanosSeattle[k]) {
-                    repeat = true;
-                }
-            }
+            const tempFileNameString = 'gsv-' + city + '-' + labelID + '-' + labelTypeID + '.jpg';
 
-            for (let k = 0; k < previouslyFetchedPanosOradell.length; k++) {
-                if (fileName == previouslyFetchedPanosOradell[k]) {
-                    repeat = true;
-                }
-            }
-
-            for (let k = 0; k < previouslyFetchedPanosPittsburgh.length; k++) {
-                if (fileName == previouslyFetchedPanosPittsburgh[k]) {
-                    repeat = true;
-                }
-            }
-
-            for (let k = 0; k < previouslyFetchedPanosChicago.length; k++) {
-                if (fileName == previouslyFetchedPanosChicago[k]) {
-                    repeat = true;
-                }
+            // Check if we have already fetched this crop. If so, log and skip.
+            if (previouslyFetchedPanos.indexOf(tempFileNameString) > -1) {
+                console.log('Crops is already fetched: ' + tempFileNameString + '. Skipping.');
+                logData.repeatPanos.push(city + '-' + labelID);
+                logData.repeat += 1;
+                continue;
             }
 
             // LABEL_DATA2 is in labelData-seattle-all.js
             for (let j = 0; j < LABEL_DATA2.length; j++) {
-                if ((panoID == LABEL_DATA2[j].properties.gsv_panorama_id)) {
+                if ((panoID === LABEL_DATA2[j].properties.gsv_panorama_id)) {
                     expired = LABEL_DATA2[j].properties.expired;
                 }
             }
@@ -257,12 +238,6 @@ $(function() {
             if (expired) {
                 logData.expiredPanos.push(city + '-' + labelID);
                 logData.expiredPanoCount += 1;
-                continue;
-            }
-
-            if (repeat) {
-                logData.repeatPanos.push(city + '-' + labelID);
-                logData.repeat += 1;
                 continue;
             }
 
@@ -276,17 +251,9 @@ $(function() {
         }
 
         console.log('Finished fetching crops. ');
-        // console.log('CurbRamp: ' + CurbRamp + ' ');
-        // console.log('NoCurbRamp: ' + NoCurbRamp + ' ');
-        // console.log('Obstacle: ' + Obstacle + ' ');
-        // console.log('SurfaceProblem: ' + SurfaceProblem + ' ');
-        // console.log('Other: ' + Other + ' ');
-        // console.log('Occlusion: ' + Occlusion + ' ');
-        // console.log('NoSidewalk: ' + NoSidewalk + ' ');
-        // console.log('Problem: ' + Problem + ' ');
-        // console.log('Crosswalk: ' + Crosswalk + ' ');
-        // console.log('Signal: ' + Signal + ' ');
     }
+
     savePanos();
+
     // loadPano('HgHahHJG2_F61YXdbdGdKw', 0, 300, 1);
 })
