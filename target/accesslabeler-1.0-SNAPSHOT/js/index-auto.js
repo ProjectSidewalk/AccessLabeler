@@ -11,7 +11,8 @@ $(function() {
     }
 
     const START_IDX = 0;
-    const N_PANOS_TO_FETCH = LABEL_DATA.length;
+    const N_PANOS_TO_FETCH = 2000;
+    // const N_PANOS_TO_FETCH = LABEL_DATA.length;
 
     let service = null;
 
@@ -48,6 +49,7 @@ $(function() {
         'succeededPanos': [], // Successfully fetched
         'expiredPanos': [], // ProjectSidewalk knows it is expired
         'unknownErrors': [], // Some other error happened
+        'repeatPanos': [], // Panos that were already fetched
         'failedPanoCount': 0,
         'succeededPanoCount': 0,
         'expiredPanoCount': 0,
@@ -205,6 +207,7 @@ $(function() {
             let fov;
             let city;
             let expired;
+            let repeat;
 
             if (labelData.hasOwnProperty('LabelID')) { // We have data in two formats. This is the old format.
                 labelID = labelData.LabelID;
@@ -234,6 +237,32 @@ $(function() {
                continue;
             }
 
+            // Check if crop already exists
+            let fileName = 'gsv-' + city + '-' + labelID + '-' + labelTypeID + '.jpg';
+            for (let k = 0; k < previouslyFetchedPanosSeattle.length; k++) {
+                if (fileName == previouslyFetchedPanosSeattle[k]) {
+                    repeat = true;
+                }
+            }
+
+            for (let k = 0; k < previouslyFetchedPanosOradell.length; k++) {
+                if (fileName == previouslyFetchedPanosOradell[k]) {
+                    repeat = true;
+                }
+            }
+
+            for (let k = 0; k < previouslyFetchedPanosPittsburgh.length; k++) {
+                if (fileName == previouslyFetchedPanosPittsburgh[k]) {
+                    repeat = true;
+                }
+            }
+
+            for (let k = 0; k < previouslyFetchedPanosChicago.length; k++) {
+                if (fileName == previouslyFetchedPanosChicago[k]) {
+                    repeat = true;
+                }
+            }
+
             // LABEL_DATA2 is in labelData-seattle-all.js
             for (let j = 0; j < LABEL_DATA2.length; j++) {
                 if ((panoID == LABEL_DATA2[j].properties.gsv_panorama_id)) {
@@ -244,6 +273,12 @@ $(function() {
             if (expired) {
                 logData.expiredPanos.push(city + '-' + labelID);
                 logData.expiredPanoCount += 1;
+                continue;
+            }
+
+            if (repeat) {
+                logData.repeatPanos.push(city + '-' + labelID);
+                logData.repeat += 1;
                 continue;
             }
 
