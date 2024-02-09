@@ -19,7 +19,10 @@
         var city = 'seattle';
         var labelTypeID = 'Obstacle';
         var dirName = 'crops-' + city + '-' + labelTypeID;
-        const previouslyFetchedPanos = <%=FileManager.getFilesInDirectory("crops-seattle-Obstacle")%>;
+        const previouslyFetchedPanosSeattle = <%=FileManager.getFilesInDirectory("crops-seattle-Obstacle")%>;
+        const previouslyFetchedPanosOradell = <%=FileManager.getFilesInDirectory("crops-oradell-Obstacle")%>;
+        const previouslyFetchedPanosPittsburgh = <%=FileManager.getFilesInDirectory("crops-pittsburgh-Obstacle")%>;
+        const previouslyFetchedPanosChicago = <%=FileManager.getFilesInDirectory("crops-chicago-Obstacle")%>;
 
         window.addEventListener('error',function(error, url, line) {
             console.log(error);
