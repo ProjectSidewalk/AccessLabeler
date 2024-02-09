@@ -47,7 +47,8 @@ public class FileManager {
         StringBuilder result = new StringBuilder();
         result.append("[");
         for (File file : files) {
-            result.append("'").append(file.getName()).append("'").append(",");
+            String filenameWithoutExtension = file.getName().split("\\.")[0];
+            result.append("'").append(filenameWithoutExtension).append("'").append(",");
         }
         result.append("]");
 

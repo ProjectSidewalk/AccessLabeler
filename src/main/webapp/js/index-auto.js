@@ -137,10 +137,15 @@ $(function() {
                     // Pano fetch failed because it expired
                     logData.failedPanos.push(city + '-' + labelID);
                     logData.failedPanoCount += 1;
+
+                    console.log('Pano fetch failed because it expired: ' + city + '-' + labelID);
+
                 } else if (result.status == 'UNKNOWN_ERROR') {
                     // Other errors
                     logData.unknownErrors.push(city + '-' + labelID);
                     logData.unknownErrorCount += 1;
+
+                    console.log('Pano fetch failed because of unknown error: ' + city + '-' + labelID);
                 } else {
                     panorama.setPano(panoID);
                     panorama.setPov({heading: heading, pitch: pitch, zoom: zoom});
@@ -148,12 +153,12 @@ $(function() {
                     logData.succeededPanoCount += 1;
 
                     setTimeout(function() {
+                        console.log('Saving screenshot for ' + city + '-' + labelID + '-' + labelTypeID + '.png');
                         saveGSVScreenshot('gsv-' + city + '-' + labelID + '-' + labelTypeID + '.png', 'crops-' + city + '-' + labelTypeID);
                     }, 4500);
                 }
             }
         })
-
     }
 
     init();
@@ -214,11 +219,12 @@ $(function() {
             //     continue;
             // }
 
-            if ((labelTypeID != 'Obstacle')) {
+            // todo: this should be handled better and remove magic strings.
+            if ((labelTypeID !== 'Obstacle')) {
                continue;
             }
 
-            const tempFileNameString = 'gsv-' + city + '-' + labelID + '-' + labelTypeID + '.jpg';
+            const tempFileNameString = 'gsv-' + city + '-' + labelID + '-' + labelTypeID; // Intentionally not adding the file extension here.
 
             // Check if we have already fetched this crop. If so, log and skip.
             if (previouslyFetchedPanos.indexOf(tempFileNameString) > -1) {
@@ -241,7 +247,7 @@ $(function() {
                 continue;
             }
 
-            console.log('Loading panorama ' + i + ' of ' + N_PANOS_TO_FETCH + ' with labelID ' + labelID + ' and labelTypeID ' + labelTypeID);
+            console.log('Trying to load panorama ' + i + ' of ' + N_PANOS_TO_FETCH + ' with labelID ' + labelID + ' and labelTypeID ' + labelTypeID);
 
             loadPano(city, labelID, labelTypeID, panoID, pitch, heading, zoom);
 
