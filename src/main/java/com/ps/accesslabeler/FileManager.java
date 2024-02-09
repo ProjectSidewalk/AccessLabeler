@@ -41,7 +41,7 @@ public class FileManager {
         File[] files = dir.listFiles();
 
         if (files == null || files.length == 0) {
-            return "No files found in " + dirName;
+            return "[]";
         }
 
         StringBuilder result = new StringBuilder();
