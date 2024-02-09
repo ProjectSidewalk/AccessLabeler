@@ -15,20 +15,6 @@ $(function() {
 
     let service = null;
 
-    class failedPano {
-        constructor() {
-            let panoID = '';
-            let labelID = '';
-            let errorMessage = '';
-        }
-    }
-
-    const unknownError = {
-        panoID: '',
-        labelID: '',
-        errorMessage: ''
-    }
-
     const CITY = {
         SEATTLE: 'seattle'
     }
@@ -97,21 +83,19 @@ $(function() {
             'name': name
         }
 
-        // Save a high-res version of the image.
-        html2canvas($('.widget-scene-canvas')[0]).then(canvas => {
+        const canvas = $('.widget-scene canvas')[0];
 
-            d.dir = dir;
-            d.b64 = canvas.toDataURL('image/jpeg', 1);
+        d.dir = dir;
+        d.b64 = canvas.toDataURL('image/png', 1);
 
-            $.ajax({
-                type: "POST",
-                url: "saveImage.jsp",
-                data: d,
-                contentType: "application/x-www-form-urlencoded; charset=UTF-8",
-                success: function(data){
-                    console.log(data);
-                }
-            });
+        $.ajax({
+            type: "POST",
+            url: "saveImage.jsp",
+            data: d,
+            contentType: "application/x-www-form-urlencoded; charset=UTF-8",
+            success: function(data){
+                console.log(data);
+            }
         });
     }
 
@@ -165,7 +149,7 @@ $(function() {
                     logData.succeededPanoCount += 1;
 
                     setTimeout(function() {
-                        saveGSVScreenshot('gsv-' + city + '-' + labelID + '-' + labelTypeID + '.jpg', 'crops-' + city + '-' + labelTypeID);
+                        saveGSVScreenshot('gsv-' + city + '-' + labelID + '-' + labelTypeID + '.png', 'crops-' + city + '-' + labelTypeID);
                     }, 4500);
                 }
             }

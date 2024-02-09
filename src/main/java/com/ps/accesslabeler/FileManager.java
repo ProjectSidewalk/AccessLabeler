@@ -91,7 +91,7 @@ public class FileManager {
                 byte[] decodedBytes = Base64.getDecoder().decode(base64String);
 
                 BufferedImage image = ImageIO.read(new ByteArrayInputStream(decodedBytes));
-                ImageIO.write(image, "jpg", output);
+                ImageIO.write(image, "png", output);
 
             } else if (LOGS_DIR.equals(dirName)) {
 
