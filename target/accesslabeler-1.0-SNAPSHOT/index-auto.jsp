@@ -8,9 +8,6 @@
 
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/css/bootstrap.min.css" integrity="sha384-rbsA2VBKQhggwzxH7pPCaAqO46MgnOM80zW1RWuH61DGLwZJEdK2Kadq2F9CUG65" crossorigin="anonymous">
 
-    <!-- Using jsDelivr -->
-<%--    <script src="https://cdn.jsdelivr.net/npm/@xenova/transformers/dist/transformers.min.js"></script>--%>
-
     <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyBmlVct28ooFui9xThE2ZSgugQ9gEI2cZo"></script>
 
     <script>
@@ -19,10 +16,8 @@
         var city = 'seattle';
         var labelTypeID = 'Obstacle';
         var dirName = 'crops-' + city + '-' + labelTypeID;
-        const previouslyFetchedPanosSeattle = <%=FileManager.getFilesInDirectory("crops-seattle-Obstacle")%>;
-        const previouslyFetchedPanosOradell = <%=FileManager.getFilesInDirectory("crops-oradell-Obstacle")%>;
-        const previouslyFetchedPanosPittsburgh = <%=FileManager.getFilesInDirectory("crops-pittsburgh-Obstacle")%>;
-        const previouslyFetchedPanosChicago = <%=FileManager.getFilesInDirectory("crops-chicago-Obstacle")%>;
+
+        const previouslyFetchedPanos = <%=FileManager.getFilesInDirectory("crops-seattle-CurbRamp")%>;
 
         window.addEventListener('error',function(error, url, line) {
             console.log(error);
@@ -30,8 +25,6 @@
             console.log(line);
 
             return true;
-
-            // logData.unknownErrors.push(error);
         });
 
     </script>
@@ -39,9 +32,15 @@
     <script src="https://code.jquery.com/jquery-3.6.3.min.js" integrity="sha256-pvPw+upLPUjgMXY0G+8O0xUf+/Im1MZjXxxgOcBQBXU=" crossorigin="anonymous"></script>
     <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
 
+    <%-- This contains the labels labeled by Jon, Mikey, and Devon.--%>
     <script src="js/labelData-seattle-labelled.js"></script>
-    <script src="js/labelData-seattle-all.js"></script>
+
+    <%-- This contains the labels validated by Mikey and Jon.--%>
     <script src="js/labelData-seattle-validated.js"></script>
+
+    <%-- This contains the information about whether the pano is expired or not.--%>
+    <script src="js/labelData-seattle-all.js"></script>
+
     <script src="js/index-auto.js"></script>
 </head>
 <body style="margin: 0;">
@@ -59,11 +58,6 @@
     <img src="" width="100%" height="100%" class="dummy-image" style="top: 0; left: 0;">
     <div class="dummy-marker template"></div>
 </div>
-
-<%--<div class="pano-image">--%>
-<%--    <div class="pano-image-marker"></div>--%>
-<%--    <img src="sv-2.jpg" width="850px">--%>
-<%--</div>--%>
 
 <div class="actions-toolbar-overlay-container">
     <div class="actions-toolbar-overlay">

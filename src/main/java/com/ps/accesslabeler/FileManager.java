@@ -78,11 +78,11 @@ public class FileManager {
             // Do not overwrite if we already have a good crop
             // But sometimes GSV API fails, in which case we must have a fully black image which is under 30KB.
             // So if the file is over 30KB, we can assume that it is a good crop. Otherwise, we overwrite.
-            if (output.exists() && output.isFile()) {
-                if (getFileSizeKiloBytes(output) > 30) {
-                    return false;
-                }
-            }
+//            if (output.exists() && output.isFile()) {
+//                if (getFileSizeKiloBytes(output) > 30) {
+//                    return false;
+//                }
+//            }
 
             // The directory to save image could contain a subdirectory denoting high or low res.
             // So don't check for equality, check if it contains the directory name.

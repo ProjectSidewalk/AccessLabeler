@@ -2,49 +2,41 @@
 
 $(function() {
 
-    // Captures the data and state at a particular 'panorama'.
-    // All of these should be reset when the user moves to a new location.
-    const currentPanoState = {
-        location: '',       // todo: update
-        markers: [],        // all markers including the non verified ones.
-        verifiedLabels: [], // only verified labels.
-    }
-
+    // Default to fetch all crops of specified category from a dataset.
+    // LABEL_DATA: seattle-labelled
+    // LABEL_DATA3: seattle-validated
     const START_IDX = 0;
-    const N_PANOS_TO_FETCH = 2000;
-    // const N_PANOS_TO_FETCH = LABEL_DATA.length;
+    const N_PANOS_TO_FETCH= LABEL_DATA.length;
 
-    let service = null;
+    let googleMapsService = null;
 
-    class failedPano {
-        constructor() {
-            let panoID = '';
-            let labelID = '';
-            let errorMessage = '';
-        }
-    }
-
-    const unknownError = {
-        panoID: '',
-        labelID: '',
-        errorMessage: ''
-    }
-
+    // Enum for all the cities we are handling right now.
     const CITY = {
-        SEATTLE: 'seattle'
+        SEATTLE: 'seattle',
+        ORADELL: 'oradell',
+        PITTSBURGH: 'pittsburgh',
+        CHICAGO: 'chicago',
     }
 
+    // Enum for label types of crops in the dataset.
     const LABEL_TYPE = {
-        OBSTACLE: 'obstacle',
-        SIGNAL: 'signal',
-        CROSSWALK: 'crosswalk',
-        SURFACEPROBLEM: 'surfaceproblem',
-        CURBRAMP: 'curbramp'
+        OBSTACLE: 'Obstacle',
+        SIGNAL: 'Signal',
+        CROSSWALK: 'Crosswalk',
+        SURFACEPROBLEM: 'SurfaceProblem',
+        CURBRAMP: 'CurbRamp',
     }
 
+    // Enum for which dataset the crops are from.
+    const DATASET = {
+        LABELLED: 'labelled',
+        VALIDATED: 'validated',
+    }
+
+    // todo: add documentation and clearly and concisely mention what these fields capture. Maybe add a few examples.
     const logData = {
         'datasetName': 'labelData-seattle-labelled.js',
-        'experimentID': CITY.SEATTLE + '-' + LABEL_TYPE.OBSTACLE,
+        'experimentID': CITY.ORADELL + '-' + LABEL_TYPE.CURBRAMP + '-' + DATASET.LABELLED,
         'failedPanos': [], // We checked directly that this is expired
         'succeededPanos': [], // Successfully fetched
         'expiredPanos': [], // ProjectSidewalk knows it is expired
@@ -99,21 +91,19 @@ $(function() {
             'name': name
         }
 
-        // Save a high-res version of the image.
-        html2canvas($('.widget-scene-canvas')[0]).then(canvas => {
+        const canvas = $('.widget-scene canvas')[0];
 
-            d.dir = dir;
-            d.b64 = canvas.toDataURL('image/jpeg', 1);
+        d.dir = dir;
+        d.b64 = canvas.toDataURL('image/png', 1);
 
-            $.ajax({
-                type: "POST",
-                url: "saveImage.jsp",
-                data: d,
-                contentType: "application/x-www-form-urlencoded; charset=UTF-8",
-                success: function(data){
-                    console.log(data);
-                }
-            });
+        $.ajax({
+            type: "POST",
+            url: "saveImage.jsp",
+            data: d,
+            contentType: "application/x-www-form-urlencoded; charset=UTF-8",
+            success: function(data){
+                console.log(data);
+            }
         });
     }
 
@@ -142,7 +132,7 @@ $(function() {
                 panorama.setPov(panorama.getPhotographerPov());
             });
 
-        service = new google.maps.StreetViewService();
+        googleMapsService = new google.maps.StreetViewService();
 
     }
 
@@ -156,10 +146,15 @@ $(function() {
                     // Pano fetch failed because it expired
                     logData.failedPanos.push(city + '-' + labelID);
                     logData.failedPanoCount += 1;
+
+                    console.log('Pano fetch failed because it expired: ' + city + '-' + labelID);
+
                 } else if (result.status == 'UNKNOWN_ERROR') {
                     // Other errors
                     logData.unknownErrors.push(city + '-' + labelID);
                     logData.unknownErrorCount += 1;
+
+                    console.log('Pano fetch failed because of unknown error: ' + city + '-' + labelID);
                 } else {
                     panorama.setPano(panoID);
                     panorama.setPov({heading: heading, pitch: pitch, zoom: zoom});
@@ -167,12 +162,12 @@ $(function() {
                     logData.succeededPanoCount += 1;
 
                     setTimeout(function() {
-                        saveGSVScreenshot('gsv-' + city + '-' + labelID + '-' + labelTypeID + '.jpg', 'crops-' + city + '-' + labelTypeID);
-                    }, 4500);
+                        console.log('Saving screenshot for ' + city + '-' + labelID + '-' + labelTypeID + '.png');
+                        saveGSVScreenshot('gsv-' + city + '-' + labelID + '-' + labelTypeID + '.png', 'crops-' + city + '-' + labelTypeID);
+                    }, 5500);
                 }
             }
         })
-
     }
 
     init();
@@ -183,17 +178,6 @@ $(function() {
     }
 
     async function savePanos () {
-        // let CurbRamp = 0;
-        // let NoCurbRamp = 0;
-        // let Obstacle = 0;
-        // let SurfaceProblem = 0;
-        // let Other = 0;
-        // let Occlusion = 0;
-        // let NoSidewalk = 0;
-        // let Problem = 0;
-        // let Crosswalk = 0;
-        // let Signal = 0;
-
         for (let i= START_IDX; i < N_PANOS_TO_FETCH; i++) {
 
             const labelData = LABEL_DATA[i];
@@ -207,7 +191,6 @@ $(function() {
             let fov;
             let city;
             let expired;
-            let repeat;
 
             if (labelData.hasOwnProperty('LabelID')) { // We have data in two formats. This is the old format.
                 labelID = labelData.LabelID;
@@ -229,43 +212,30 @@ $(function() {
                 city = labelData.city;
             }
 
-            // if ((labelID != 100644) && (labelID != 100648)) {
-            //     continue;
-            // }
+            // Convert the labelTypeID format in validated dataset to labelled
+            if (labelTypeID === 1) {
+                labelTypeID = LABEL_TYPE.CURBRAMP;
+            }
 
-            if ((labelTypeID != 'Obstacle')) {
+            // todo: this should be handled better and remove magic strings.
+            if ((city !== CITY.ORADELL) || (labelTypeID !== LABEL_TYPE.CURBRAMP)) {
                continue;
             }
 
-            // Check if crop already exists
-            let fileName = 'gsv-' + city + '-' + labelID + '-' + labelTypeID + '.jpg';
-            for (let k = 0; k < previouslyFetchedPanosSeattle.length; k++) {
-                if (fileName == previouslyFetchedPanosSeattle[k]) {
-                    repeat = true;
-                }
-            }
+            const tempFileNameString = 'gsv-' + city + '-' + labelID + '-' + labelTypeID; // Intentionally not adding the file extension here.
 
-            for (let k = 0; k < previouslyFetchedPanosOradell.length; k++) {
-                if (fileName == previouslyFetchedPanosOradell[k]) {
-                    repeat = true;
-                }
-            }
-
-            for (let k = 0; k < previouslyFetchedPanosPittsburgh.length; k++) {
-                if (fileName == previouslyFetchedPanosPittsburgh[k]) {
-                    repeat = true;
-                }
-            }
-
-            for (let k = 0; k < previouslyFetchedPanosChicago.length; k++) {
-                if (fileName == previouslyFetchedPanosChicago[k]) {
-                    repeat = true;
-                }
+            // Check if we have already fetched this crop. If so, log and skip.
+            if (previouslyFetchedPanos.indexOf(tempFileNameString) > -1) {
+                console.log('Crops is already fetched: ' + tempFileNameString + '. Skipping.');
+                logData.repeatPanos.push(city + '-' + labelID);
+                logData.repeat += 1;
+                postLogData();
+                continue;
             }
 
             // LABEL_DATA2 is in labelData-seattle-all.js
             for (let j = 0; j < LABEL_DATA2.length; j++) {
-                if ((panoID == LABEL_DATA2[j].properties.gsv_panorama_id)) {
+                if ((panoID === LABEL_DATA2[j].properties.gsv_panorama_id)) {
                     expired = LABEL_DATA2[j].properties.expired;
                 }
             }
@@ -273,36 +243,23 @@ $(function() {
             if (expired) {
                 logData.expiredPanos.push(city + '-' + labelID);
                 logData.expiredPanoCount += 1;
+                postLogData();
                 continue;
             }
 
-            if (repeat) {
-                logData.repeatPanos.push(city + '-' + labelID);
-                logData.repeat += 1;
-                continue;
-            }
-
-            console.log('Loading panorama ' + i + ' of ' + N_PANOS_TO_FETCH + ' with labelID ' + labelID + ' and labelTypeID ' + labelTypeID);
+            console.log('Trying to load panorama ' + i + ' of ' + N_PANOS_TO_FETCH + ' with labelID ' + labelID + ' and labelTypeID ' + labelTypeID);
 
             loadPano(city, labelID, labelTypeID, panoID, pitch, heading, zoom);
 
-            await delay(6000);
+            await delay(7000);
 
             postLogData();
         }
 
         console.log('Finished fetching crops. ');
-        // console.log('CurbRamp: ' + CurbRamp + ' ');
-        // console.log('NoCurbRamp: ' + NoCurbRamp + ' ');
-        // console.log('Obstacle: ' + Obstacle + ' ');
-        // console.log('SurfaceProblem: ' + SurfaceProblem + ' ');
-        // console.log('Other: ' + Other + ' ');
-        // console.log('Occlusion: ' + Occlusion + ' ');
-        // console.log('NoSidewalk: ' + NoSidewalk + ' ');
-        // console.log('Problem: ' + Problem + ' ');
-        // console.log('Crosswalk: ' + Crosswalk + ' ');
-        // console.log('Signal: ' + Signal + ' ');
     }
+
     savePanos();
+
     // loadPano('HgHahHJG2_F61YXdbdGdKw', 0, 300, 1);
 })

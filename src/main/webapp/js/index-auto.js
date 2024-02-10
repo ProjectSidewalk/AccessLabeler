@@ -2,13 +2,15 @@
 
 $(function() {
 
+    // Default to fetch all crops of specified category from a dataset.
+    // LABEL_DATA: seattle-labelled
+    // LABEL_DATA3: seattle-validated
     const START_IDX = 0;
-    const N_PANOS_TO_FETCH = 2000;
-    // const N_PANOS_TO_FETCH = LABEL_DATA.length;
+    const N_PANOS_TO_FETCH= LABEL_DATA.length;
 
     let googleMapsService = null;
 
-    // Enum for all the citites we are handling right now.
+    // Enum for all the cities we are handling right now.
     const CITY = {
         SEATTLE: 'seattle',
         ORADELL: 'oradell',
@@ -16,18 +18,25 @@ $(function() {
         CHICAGO: 'chicago',
     }
 
+    // Enum for label types of crops in the dataset.
     const LABEL_TYPE = {
-        OBSTACLE: 'obstacle',
-        SIGNAL: 'signal',
-        CROSSWALK: 'crosswalk',
-        SURFACEPROBLEM: 'surfaceproblem',
-        CURBRAMP: 'curbramp'
+        OBSTACLE: 'Obstacle',
+        SIGNAL: 'Signal',
+        CROSSWALK: 'Crosswalk',
+        SURFACEPROBLEM: 'SurfaceProblem',
+        CURBRAMP: 'CurbRamp',
+    }
+
+    // Enum for which dataset the crops are from.
+    const DATASET = {
+        LABELLED: 'labelled',
+        VALIDATED: 'validated',
     }
 
     // todo: add documentation and clearly and concisely mention what these fields capture. Maybe add a few examples.
     const logData = {
         'datasetName': 'labelData-seattle-labelled.js',
-        'experimentID': CITY.SEATTLE + '-' + LABEL_TYPE.OBSTACLE,
+        'experimentID': CITY.ORADELL + '-' + LABEL_TYPE.CURBRAMP + '-' + DATASET.LABELLED,
         'failedPanos': [], // We checked directly that this is expired
         'succeededPanos': [], // Successfully fetched
         'expiredPanos': [], // ProjectSidewalk knows it is expired
@@ -155,7 +164,7 @@ $(function() {
                     setTimeout(function() {
                         console.log('Saving screenshot for ' + city + '-' + labelID + '-' + labelTypeID + '.png');
                         saveGSVScreenshot('gsv-' + city + '-' + labelID + '-' + labelTypeID + '.png', 'crops-' + city + '-' + labelTypeID);
-                    }, 4500);
+                    }, 5500);
                 }
             }
         })
@@ -169,17 +178,6 @@ $(function() {
     }
 
     async function savePanos () {
-        // let CurbRamp = 0;
-        // let NoCurbRamp = 0;
-        // let Obstacle = 0;
-        // let SurfaceProblem = 0;
-        // let Other = 0;
-        // let Occlusion = 0;
-        // let NoSidewalk = 0;
-        // let Problem = 0;
-        // let Crosswalk = 0;
-        // let Signal = 0;
-
         for (let i= START_IDX; i < N_PANOS_TO_FETCH; i++) {
 
             const labelData = LABEL_DATA[i];
@@ -193,7 +191,6 @@ $(function() {
             let fov;
             let city;
             let expired;
-            let repeat;
 
             if (labelData.hasOwnProperty('LabelID')) { // We have data in two formats. This is the old format.
                 labelID = labelData.LabelID;
@@ -215,12 +212,13 @@ $(function() {
                 city = labelData.city;
             }
 
-            // if ((labelID != 100644) && (labelID != 100648)) {
-            //     continue;
-            // }
+            // Convert the labelTypeID format in validated dataset to labelled
+            if (labelTypeID === 1) {
+                labelTypeID = LABEL_TYPE.CURBRAMP;
+            }
 
             // todo: this should be handled better and remove magic strings.
-            if ((labelTypeID !== 'Obstacle')) {
+            if ((city !== CITY.ORADELL) || (labelTypeID !== LABEL_TYPE.CURBRAMP)) {
                continue;
             }
 
@@ -231,6 +229,7 @@ $(function() {
                 console.log('Crops is already fetched: ' + tempFileNameString + '. Skipping.');
                 logData.repeatPanos.push(city + '-' + labelID);
                 logData.repeat += 1;
+                postLogData();
                 continue;
             }
 
@@ -244,6 +243,7 @@ $(function() {
             if (expired) {
                 logData.expiredPanos.push(city + '-' + labelID);
                 logData.expiredPanoCount += 1;
+                postLogData();
                 continue;
             }
 
@@ -251,7 +251,7 @@ $(function() {
 
             loadPano(city, labelID, labelTypeID, panoID, pitch, heading, zoom);
 
-            await delay(6000);
+            await delay(7000);
 
             postLogData();
         }
