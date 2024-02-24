@@ -25,6 +25,10 @@ $(function() {
         CROSSWALK: 'Crosswalk',
         SURFACEPROBLEM: 'SurfaceProblem',
         CURBRAMP: 'CurbRamp',
+        NOCURBRAMP: 'NoCurbRamp',
+        NOSIDEWALK: 'NoSidewalk',
+        OTHER: 'Other',
+        OCCLUSION: 'Occlusion',
     }
 
     // Enum for which dataset the crops are from.
@@ -35,8 +39,9 @@ $(function() {
 
     // todo: add documentation and clearly and concisely mention what these fields capture. Maybe add a few examples.
     const logData = {
-        'datasetName': 'labelData-seattle-labelled.js',
-        'experimentID': CITY.ORADELL + '-' + LABEL_TYPE.CURBRAMP + '-' + DATASET.LABELLED,
+        'city': CITY.CHICAGO,
+        'labelType': LABEL_TYPE.OCCLUSION,
+        'dataset': DATASET.LABELLED,
         'failedPanos': [], // We checked directly that this is expired
         'succeededPanos': [], // Successfully fetched
         'expiredPanos': [], // ProjectSidewalk knows it is expired
@@ -60,7 +65,7 @@ $(function() {
         };
 
         const d = {
-            'name': 'log-' + logData.experimentID +'.json',
+            'name': 'log-' + logData.city + '-' + logData.labelType + '-' + logData.dataset + '.json',
             'data': JSON.stringify(data)
         }
 
@@ -213,12 +218,12 @@ $(function() {
             }
 
             // Convert the labelTypeID format in validated dataset to labelled
-            if (labelTypeID === 1) {
-                labelTypeID = LABEL_TYPE.CURBRAMP;
+            if (labelTypeID === 6) {
+                labelTypeID = LABEL_TYPE.OCCLUSION;
             }
 
             // todo: this should be handled better and remove magic strings.
-            if ((city !== CITY.ORADELL) || (labelTypeID !== LABEL_TYPE.CURBRAMP)) {
+            if ((city !== logData.city) || (labelTypeID !== logData.labelType)) {
                continue;
             }
 
