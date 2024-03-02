@@ -2,6 +2,7 @@
 
 $(function() {
 
+    // Change how many pictures we want to fetch here.
     // Default to fetch all crops of specified category from a dataset.
     // LABEL_DATA: seattle-labelled
     // LABEL_DATA3: seattle-validated
@@ -29,19 +30,21 @@ $(function() {
         NOSIDEWALK: 'NoSidewalk',
         OTHER: 'Other',
         OCCLUSION: 'Occlusion',
+        PROBLEM: 'Problem',
     }
 
     // Enum for which dataset the crops are from.
     const DATASET = {
         LABELLED: 'labelled',
         VALIDATED: 'validated',
+        OTHER: 'other',
     }
 
     // todo: add documentation and clearly and concisely mention what these fields capture. Maybe add a few examples.
     const logData = {
-        'city': CITY.CHICAGO,
-        'labelType': LABEL_TYPE.OCCLUSION,
-        'dataset': DATASET.LABELLED,
+        'city': CITY.SEATTLE, // Which city the crops we want to fetch from.
+        'labelType': LABEL_TYPE.PROBLEM, // Which label type the crops we want to fetch of.
+        'dataset': DATASET.LABELLED, // Which dataset the crops we want to fetch from.
         'failedPanos': [], // We checked directly that this is expired
         'succeededPanos': [], // Successfully fetched
         'expiredPanos': [], // ProjectSidewalk knows it is expired
@@ -218,11 +221,12 @@ $(function() {
             }
 
             // Convert the labelTypeID format in validated dataset to labelled
-            if (labelTypeID === 6) {
-                labelTypeID = LABEL_TYPE.OCCLUSION;
+            // TODO: Put the matching in
+            if (labelTypeID === 8) {
+                labelTypeID = LABEL_TYPE.PROBLEM;
             }
 
-            // todo: this should be handled better and remove magic strings.
+            // Checks if the city and label type matches.
             if ((city !== logData.city) || (labelTypeID !== logData.labelType)) {
                continue;
             }
