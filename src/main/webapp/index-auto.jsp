@@ -17,7 +17,7 @@
         var labelTypeID = 'Obstacle';
         var dirName = 'crops-' + city + '-' + labelTypeID;
 
-        const previouslyFetchedPanos = <%=FileManager.getFilesInDirectory("crop-seattle")%>;
+        const previouslyFetchedPanos = <%=FileManager.getFilesInDirectory("crops-seattle-NoCurbRamp")%>;
 
         window.addEventListener('error',function(error, url, line) {
             console.log(error);
@@ -34,12 +34,16 @@
 
     <%-- This contains the labels labeled by Jon, Mikey, and Devon.--%>
     <script src="js/labelData-seattle-labelled.js"></script>
+    <script src="js/labelData-feb-28-labelled.js"></script>
 
     <%-- This contains the labels validated by Mikey and Jon.--%>
     <script src="js/labelData-seattle-validated.js"></script>
+    <script src="js/labelData-feb-28-validated.js"></script>
 
     <%-- This contains the information about whether the pano is expired or not.--%>
     <script src="js/labelData-seattle-all.js"></script>
+
+
 
     <script src="js/index-auto.js"></script>
 </head>

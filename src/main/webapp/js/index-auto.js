@@ -6,8 +6,10 @@ $(function() {
     // Default to fetch all crops of specified category from a dataset.
     // LABEL_DATA: seattle-labelled
     // LABEL_DATA3: seattle-validated
+    // LABEL_DATA4: feb-28-labelled
+    // LABEL_DATA5: feb-28-validated
     const START_IDX = 0;
-    const N_PANOS_TO_FETCH= LABEL_DATA.length;
+    const N_PANOS_TO_FETCH= LABEL_DATA4.length;
 
     let googleMapsService = null;
 
@@ -37,14 +39,16 @@ $(function() {
     const DATASET = {
         LABELLED: 'labelled',
         VALIDATED: 'validated',
+        NEWLABELLED: 'feb-28-labelled',
+        NEWVALIDATED: 'feb-28-validated',
         OTHER: 'other',
     }
 
     // todo: add documentation and clearly and concisely mention what these fields capture. Maybe add a few examples.
     const logData = {
-        'city': CITY.SEATTLE, // Which city the crops we want to fetch from.
-        'labelType': LABEL_TYPE.PROBLEM, // Which label type the crops we want to fetch of.
-        'dataset': DATASET.LABELLED, // Which dataset the crops we want to fetch from.
+        'city': CITY.ORADELL, // Which city the crops we want to fetch from.
+        'labelType': LABEL_TYPE.SURFACEPROBLEM, // Which label type the crops we want to fetch of.
+        'dataset': DATASET.NEWLABELLED, // Which dataset the crops we want to fetch from.
         'failedPanos': [], // We checked directly that this is expired
         'succeededPanos': [], // Successfully fetched
         'expiredPanos': [], // ProjectSidewalk knows it is expired
@@ -171,7 +175,7 @@ $(function() {
 
                     setTimeout(function() {
                         console.log('Saving screenshot for ' + city + '-' + labelID + '-' + labelTypeID + '.png');
-                        saveGSVScreenshot('gsv-' + city + '-' + labelID + '-' + labelTypeID + '.png', 'crops-' + city + '-' + labelTypeID);
+                        saveGSVScreenshot('gsv-' + city + '-' + labelID + '-' + labelTypeID + '.png', 'crops-' + city + '-' + labelTypeID + '-feb-28');
                     }, 5500);
                 }
             }
@@ -188,7 +192,7 @@ $(function() {
     async function savePanos () {
         for (let i= START_IDX; i < N_PANOS_TO_FETCH; i++) {
 
-            const labelData = LABEL_DATA[i];
+            const labelData = LABEL_DATA4[i];
 
             let labelID;
             let labelTypeID;
@@ -221,9 +225,35 @@ $(function() {
             }
 
             // Convert the labelTypeID format in validated dataset to labelled
-            // TODO: Put the matching in
+            if (labelTypeID === 1) {
+                labelTypeID = LABEL_TYPE.CURBRAMP;
+            }
+            if (labelTypeID === 2) {
+                labelTypeID = LABEL_TYPE.NOCURBRAMP;
+            }
+            if (labelTypeID === 3) {
+                labelTypeID = LABEL_TYPE.OBSTACLE;
+            }
+            if (labelTypeID === 4) {
+                labelTypeID = LABEL_TYPE.SURFACEPROBLEM;
+            }
+            if (labelTypeID === 5) {
+                labelTypeID = LABEL_TYPE.OTHER;
+            }
+            if (labelTypeID === 6) {
+                labelTypeID = LABEL_TYPE.OCCLUSION;
+            }
+            if (labelTypeID === 7) {
+                labelTypeID = LABEL_TYPE.NOSIDEWALK;
+            }
             if (labelTypeID === 8) {
                 labelTypeID = LABEL_TYPE.PROBLEM;
+            }
+            if (labelTypeID === 9) {
+                labelTypeID = LABEL_TYPE.CROSSWALK;
+            }
+            if (labelTypeID === 10) {
+                labelTypeID = LABEL_TYPE.SIGNAL;
             }
 
             // Checks if the city and label type matches.
