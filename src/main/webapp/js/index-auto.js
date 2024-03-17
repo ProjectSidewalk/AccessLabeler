@@ -9,7 +9,7 @@ $(function() {
     // LABEL_DATA4: feb-28-labelled
     // LABEL_DATA5: feb-28-validated
     const START_IDX = 0;
-    const N_PANOS_TO_FETCH= LABEL_DATA4.length;
+    const N_PANOS_TO_FETCH= LABEL_DATA5.length;
 
     let googleMapsService = null;
 
@@ -44,11 +44,14 @@ $(function() {
         OTHER: 'other',
     }
 
+    const cityList = [CITY.SEATTLE, CITY.ORADELL, CITY.PITTSBURGH, CITY.CHICAGO];
+    const labelTypeList = [LABEL_TYPE.SIGNAL, LABEL_TYPE.OCCLUSION, LABEL_TYPE.PROBLEM, LABEL_TYPE.OTHER];
+
     // todo: add documentation and clearly and concisely mention what these fields capture. Maybe add a few examples.
     const logData = {
-        'city': CITY.ORADELL, // Which city the crops we want to fetch from.
-        'labelType': LABEL_TYPE.SURFACEPROBLEM, // Which label type the crops we want to fetch of.
-        'dataset': DATASET.NEWLABELLED, // Which dataset the crops we want to fetch from.
+        'city': CITY.CHICAGO, // Which city the crops we want to fetch from.
+        'labelType': LABEL_TYPE.OBSTACLE, // Which label type the crops we want to fetch of.
+        'dataset': DATASET.NEWVALIDATED, // Which dataset the crops we want to fetch from.
         'failedPanos': [], // We checked directly that this is expired
         'succeededPanos': [], // Successfully fetched
         'expiredPanos': [], // ProjectSidewalk knows it is expired
@@ -148,6 +151,20 @@ $(function() {
 
     }
 
+    // Resets the log.
+    function resetLog() {
+        logData.failedPanos = [];
+        logData.succeededPanos = [];
+        logData.expiredPanos = [];
+        logData.unknownErrors = [];
+        logData.repeatPanos = [];
+        logData.failedPanoCount = 0;
+        logData.succeededPanoCount = 0;
+        logData.expiredPanoCount = 0;
+        logData.unknownErrorCount = 0;
+        logData.repeat = 0;
+    }
+
     function loadPano(city, labelID, labelTypeID, panoID, pitch, heading, zoom) {
 
         $.ajax({
@@ -190,115 +207,122 @@ $(function() {
     }
 
     async function savePanos () {
-        for (let i= START_IDX; i < N_PANOS_TO_FETCH; i++) {
+        for (let c = 0; c < cityList.length; c++) {
+            logData.city = cityList[c];
+            for (let lt = 0; lt < labelTypeList.length; lt++) {
+                logData.labelType = labelTypeList[lt];
+                resetLog();
+                console.log('Log file has been reset for new city / label type. ');
+                for (let i= START_IDX; i < N_PANOS_TO_FETCH; i++) {
 
-            const labelData = LABEL_DATA4[i];
+                    const labelData = LABEL_DATA5[i];
 
-            let labelID;
-            let labelTypeID;
-            let panoID;
-            let heading;
-            let pitch;
-            let zoom;
-            let fov;
-            let city;
-            let expired;
+                    let labelID;
+                    let labelTypeID;
+                    let panoID;
+                    let heading;
+                    let pitch;
+                    let zoom;
+                    let fov;
+                    let city;
+                    let expired;
 
-            if (labelData.hasOwnProperty('LabelID')) { // We have data in two formats. This is the old format.
-                labelID = labelData.LabelID;
-                labelTypeID = labelData.LabelTypeID;
-                panoID = labelData.PanoID;
-                heading = labelData.Heading;
-                pitch = labelData.Pitch;
-                zoom = labelData.Zoom;
-                fov = labelData.FOV;
-                city = labelData.City;
-            } else {
-                labelID = labelData.label_id;
-                labelTypeID = labelData.label_type;
-                panoID = labelData.gsv_panorama_id;
-                heading = labelData.heading;
-                pitch = labelData.pitch;
-                zoom = labelData.zoom;
-                fov = labelData.fov;
-                city = labelData.city;
-            }
+                    if (labelData.hasOwnProperty('LabelID')) { // We have data in two formats. This is the old format.
+                        labelID = labelData.LabelID;
+                        labelTypeID = labelData.LabelTypeID;
+                        panoID = labelData.PanoID;
+                        heading = labelData.Heading;
+                        pitch = labelData.Pitch;
+                        zoom = labelData.Zoom;
+                        fov = labelData.FOV;
+                        city = labelData.City;
+                    } else {
+                        labelID = labelData.label_id;
+                        labelTypeID = labelData.label_type;
+                        panoID = labelData.gsv_panorama_id;
+                        heading = labelData.heading;
+                        pitch = labelData.pitch;
+                        zoom = labelData.zoom;
+                        fov = labelData.fov;
+                        city = labelData.city;
+                    }
 
-            // Convert the labelTypeID format in validated dataset to labelled
-            if (labelTypeID === 1) {
-                labelTypeID = LABEL_TYPE.CURBRAMP;
-            }
-            if (labelTypeID === 2) {
-                labelTypeID = LABEL_TYPE.NOCURBRAMP;
-            }
-            if (labelTypeID === 3) {
-                labelTypeID = LABEL_TYPE.OBSTACLE;
-            }
-            if (labelTypeID === 4) {
-                labelTypeID = LABEL_TYPE.SURFACEPROBLEM;
-            }
-            if (labelTypeID === 5) {
-                labelTypeID = LABEL_TYPE.OTHER;
-            }
-            if (labelTypeID === 6) {
-                labelTypeID = LABEL_TYPE.OCCLUSION;
-            }
-            if (labelTypeID === 7) {
-                labelTypeID = LABEL_TYPE.NOSIDEWALK;
-            }
-            if (labelTypeID === 8) {
-                labelTypeID = LABEL_TYPE.PROBLEM;
-            }
-            if (labelTypeID === 9) {
-                labelTypeID = LABEL_TYPE.CROSSWALK;
-            }
-            if (labelTypeID === 10) {
-                labelTypeID = LABEL_TYPE.SIGNAL;
-            }
+                    // Convert the labelTypeID format in validated dataset to labelled
+                    if (labelTypeID === 1) {
+                        labelTypeID = LABEL_TYPE.CURBRAMP;
+                    }
+                    if (labelTypeID === 2) {
+                        labelTypeID = LABEL_TYPE.NOCURBRAMP;
+                    }
+                    if (labelTypeID === 3) {
+                        labelTypeID = LABEL_TYPE.OBSTACLE;
+                    }
+                    if (labelTypeID === 4) {
+                        labelTypeID = LABEL_TYPE.SURFACEPROBLEM;
+                    }
+                    if (labelTypeID === 5) {
+                        labelTypeID = LABEL_TYPE.OTHER;
+                    }
+                    if (labelTypeID === 6) {
+                        labelTypeID = LABEL_TYPE.OCCLUSION;
+                    }
+                    if (labelTypeID === 7) {
+                        labelTypeID = LABEL_TYPE.NOSIDEWALK;
+                    }
+                    if (labelTypeID === 8) {
+                        labelTypeID = LABEL_TYPE.PROBLEM;
+                    }
+                    if (labelTypeID === 9) {
+                        labelTypeID = LABEL_TYPE.CROSSWALK;
+                    }
+                    if (labelTypeID === 10) {
+                        labelTypeID = LABEL_TYPE.SIGNAL;
+                    }
 
-            // Checks if the city and label type matches.
-            if ((city !== logData.city) || (labelTypeID !== logData.labelType)) {
-               continue;
-            }
+                    // Checks if the city and label type matches.
+                    if ((city !== logData.city) || (labelTypeID !== logData.labelType)) {
+                        continue;
+                    }
 
-            const tempFileNameString = 'gsv-' + city + '-' + labelID + '-' + labelTypeID; // Intentionally not adding the file extension here.
+                    const tempFileNameString = 'gsv-' + city + '-' + labelID + '-' + labelTypeID; // Intentionally not adding the file extension here.
 
-            // Check if we have already fetched this crop. If so, log and skip.
-            if (previouslyFetchedPanos.indexOf(tempFileNameString) > -1) {
-                console.log('Crops is already fetched: ' + tempFileNameString + '. Skipping.');
-                logData.repeatPanos.push(city + '-' + labelID);
-                logData.repeat += 1;
-                postLogData();
-                continue;
-            }
+                    // Check if we have already fetched this crop. If so, log and skip.
+                    if (previouslyFetchedPanos.indexOf(tempFileNameString) > -1) {
+                        console.log('Crops is already fetched: ' + tempFileNameString + '. Skipping.');
+                        logData.repeatPanos.push(city + '-' + labelID);
+                        logData.repeat += 1;
+                        postLogData();
+                        continue;
+                    }
 
-            // LABEL_DATA2 is in labelData-seattle-all.js
-            for (let j = 0; j < LABEL_DATA2.length; j++) {
-                if ((panoID === LABEL_DATA2[j].properties.gsv_panorama_id)) {
-                    expired = LABEL_DATA2[j].properties.expired;
+                    // LABEL_DATA2 is in labelData-seattle-all.js
+                    for (let j = 0; j < LABEL_DATA2.length; j++) {
+                        if ((panoID === LABEL_DATA2[j].properties.gsv_panorama_id)) {
+                            expired = LABEL_DATA2[j].properties.expired;
+                        }
+                    }
+
+                    if (expired) {
+                        logData.expiredPanos.push(city + '-' + labelID);
+                        logData.expiredPanoCount += 1;
+                        postLogData();
+                        continue;
+                    }
+
+                    console.log('Trying to load panorama ' + i + ' of ' + N_PANOS_TO_FETCH + ' with labelID ' + labelID + ' and labelTypeID ' + labelTypeID);
+
+                    loadPano(city, labelID, labelTypeID, panoID, pitch, heading, zoom);
+
+                    await delay(7000);
+
+                    postLogData();
                 }
             }
-
-            if (expired) {
-                logData.expiredPanos.push(city + '-' + labelID);
-                logData.expiredPanoCount += 1;
-                postLogData();
-                continue;
-            }
-
-            console.log('Trying to load panorama ' + i + ' of ' + N_PANOS_TO_FETCH + ' with labelID ' + labelID + ' and labelTypeID ' + labelTypeID);
-
-            loadPano(city, labelID, labelTypeID, panoID, pitch, heading, zoom);
-
-            await delay(7000);
-
-            postLogData();
         }
 
         console.log('Finished fetching crops. ');
     }
 
     savePanos();
-
     // loadPano('HgHahHJG2_F61YXdbdGdKw', 0, 300, 1);
 })

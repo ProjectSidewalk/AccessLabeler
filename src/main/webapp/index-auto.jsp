@@ -17,7 +17,17 @@
         var labelTypeID = 'Obstacle';
         var dirName = 'crops-' + city + '-' + labelTypeID;
 
-        const previouslyFetchedPanos = <%=FileManager.getFilesInDirectory("crops-seattle-NoCurbRamp")%>;
+        <%-- This is the directory (directories) to check for repeats.--%>
+        const previouslyFetchedPanos = <%=FileManager.getFilesInDirectory("crops-seattle-Obstacle")%>
+            + <%=FileManager.getFilesInDirectory("crops-oradell-Obstacle")%>
+            + <%=FileManager.getFilesInDirectory("crops-pittsburgh-Obstacle")%>
+            + <%=FileManager.getFilesInDirectory("crops-chicago-Obstacle")%>
+            + <%=FileManager.getFilesInDirectory("crops-seattle-NoSidewalk")%>
+            + <%=FileManager.getFilesInDirectory("crops-oradell-NoSidewalk")%>
+            + <%=FileManager.getFilesInDirectory("crops-pittsburgh-NoSidewalk")%>
+            + <%=FileManager.getFilesInDirectory("crops-chicago-NoSidewalk")%>
+            + <%=FileManager.getFilesInDirectory("crops-seattle-Obstacle-feb-28")%>
+        ;
 
         window.addEventListener('error',function(error, url, line) {
             console.log(error);
