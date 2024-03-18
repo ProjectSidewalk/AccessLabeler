@@ -1,4 +1,18 @@
 <%@ page import="com.ps.accesslabeler.FileManager" %>
+<%@ page import="java.util.ArrayList" %>
+
+<%
+    String[] cityList = {"seattle", "oradell", "chicago"};
+    String[] labelTypeIDs = {"Crosswalk"};
+    ArrayList<String> dirName = new ArrayList<>();
+
+    for (String city : cityList) {
+        for (String label_type : labelTypeIDs) {
+            dirName.add("crops-" + city + '-' + label_type);
+        }
+    }
+%>
+
 <!DOCTYPE html>
 <html>
 <head>
@@ -8,26 +22,17 @@
 
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/css/bootstrap.min.css" integrity="sha384-rbsA2VBKQhggwzxH7pPCaAqO46MgnOM80zW1RWuH61DGLwZJEdK2Kadq2F9CUG65" crossorigin="anonymous">
 
-    <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyBmlVct28ooFui9xThE2ZSgugQ9gEI2cZo"></script>
+    <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCth7Y89abAgQK1WFpjO2TeQCwcPPJGCKE"></script>
 
     <script>
-        var panorama;
-
-        var city = 'seattle';
-        var labelTypeID = 'Obstacle';
-        var dirName = 'crops-' + city + '-' + labelTypeID;
-
         <%-- This is the directory (directories) to check for repeats.--%>
-        const previouslyFetchedPanos = <%=FileManager.getFilesInDirectory("crops-seattle-Obstacle")%>
-            + <%=FileManager.getFilesInDirectory("crops-oradell-Obstacle")%>
-            + <%=FileManager.getFilesInDirectory("crops-pittsburgh-Obstacle")%>
-            + <%=FileManager.getFilesInDirectory("crops-chicago-Obstacle")%>
-            + <%=FileManager.getFilesInDirectory("crops-seattle-NoSidewalk")%>
-            + <%=FileManager.getFilesInDirectory("crops-oradell-NoSidewalk")%>
-            + <%=FileManager.getFilesInDirectory("crops-pittsburgh-NoSidewalk")%>
-            + <%=FileManager.getFilesInDirectory("crops-chicago-NoSidewalk")%>
-            + <%=FileManager.getFilesInDirectory("crops-seattle-Obstacle-feb-28")%>
-        ;
+        var panoList = "";
+
+        <% for (String d : dirName) { %>
+            panoList += <%=FileManager.getFilesInDirectory(d)%>
+        <% } %>
+
+        const previouslyFetchedPanos = panoList;
 
         window.addEventListener('error',function(error, url, line) {
             console.log(error);
@@ -36,7 +41,6 @@
 
             return true;
         });
-
     </script>
 
     <script src="https://code.jquery.com/jquery-3.6.3.min.js" integrity="sha256-pvPw+upLPUjgMXY0G+8O0xUf+/Im1MZjXxxgOcBQBXU=" crossorigin="anonymous"></script>

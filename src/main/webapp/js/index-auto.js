@@ -44,8 +44,8 @@ $(function() {
         OTHER: 'other',
     }
 
-    const cityList = [CITY.SEATTLE, CITY.ORADELL, CITY.PITTSBURGH, CITY.CHICAGO];
-    const labelTypeList = [LABEL_TYPE.SIGNAL, LABEL_TYPE.OCCLUSION, LABEL_TYPE.PROBLEM, LABEL_TYPE.OTHER];
+    const cityList = [CITY.SEATTLE, CITY.ORADELL, CITY.CHICAGO];
+    const labelTypeList = [LABEL_TYPE.CROSSWALK];
 
     // todo: add documentation and clearly and concisely mention what these fields capture. Maybe add a few examples.
     const logData = {
