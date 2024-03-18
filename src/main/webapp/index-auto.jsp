@@ -57,8 +57,6 @@
     <%-- This contains the information about whether the pano is expired or not.--%>
     <script src="js/labelData-seattle-all.js"></script>
 
-
-
     <script src="js/index-auto.js"></script>
 </head>
 <body style="margin: 0;">

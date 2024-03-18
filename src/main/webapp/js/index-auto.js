@@ -4,12 +4,12 @@ $(function() {
 
     // Change how many pictures we want to fetch here.
     // Default to fetch all crops of specified category from a dataset.
-    // LABEL_DATA: seattle-labelled
-    // LABEL_DATA3: seattle-validated
-    // LABEL_DATA4: feb-28-labelled
-    // LABEL_DATA5: feb-28-validated
+    // LABEL_DATA_SEATTLE_LABELLED: seattle-labelled
+    // LABEL_DATA_SEATTLE_VALIDATED: seattle-validated
+    // LABEL_DATA_NEW_LABELLED: feb-28-labelled
+    // LABEL_DATA_NEW_VALIDATED: feb-28-validated
     const START_IDX = 0;
-    const N_PANOS_TO_FETCH= LABEL_DATA5.length;
+    const N_PANOS_TO_FETCH= LABEL_DATA_NEW_VALIDATED.length;
 
     let googleMapsService = null;
 
@@ -215,7 +215,7 @@ $(function() {
                 console.log('Log file has been reset for new city / label type. ');
                 for (let i= START_IDX; i < N_PANOS_TO_FETCH; i++) {
 
-                    const labelData = LABEL_DATA5[i];
+                    const labelData = LABEL_DATA_NEW_VALIDATED[i];
 
                     let labelID;
                     let labelTypeID;
@@ -295,10 +295,10 @@ $(function() {
                         continue;
                     }
 
-                    // LABEL_DATA2 is in labelData-seattle-all.js
-                    for (let j = 0; j < LABEL_DATA2.length; j++) {
-                        if ((panoID === LABEL_DATA2[j].properties.gsv_panorama_id)) {
-                            expired = LABEL_DATA2[j].properties.expired;
+                    // LABEL_DATA_SEATTLE is in labelData-seattle-all.js
+                    for (let j = 0; j < LABEL_DATA_SEATTLE.length; j++) {
+                        if ((panoID === LABEL_DATA_SEATTLE[j].properties.gsv_panorama_id)) {
+                            expired = LABEL_DATA_SEATTLE[j].properties.expired;
                         }
                     }
 

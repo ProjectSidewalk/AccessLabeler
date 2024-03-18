@@ -1,4 +1,4 @@
-const LABEL_DATA3 = [
+const LABEL_DATA_SEATTLE_VALIDATED = [
     {
         "City": "seattle",
         "LabelID": 9,
