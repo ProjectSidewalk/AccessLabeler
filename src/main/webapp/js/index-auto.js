@@ -287,6 +287,7 @@ $(function() {
                     const tempFileNameString = 'gsv-' + city + '-' + labelID + '-' + labelTypeID; // Intentionally not adding the file extension here.
 
                     // Check if we have already fetched this crop. If so, log and skip.
+                    // Guaranteed to find previously fetched panos with no false positives because tempFileNameString is unique.
                     if (previouslyFetchedPanos.indexOf(tempFileNameString) > -1) {
                         console.log('Crops is already fetched: ' + tempFileNameString + '. Skipping.');
                         logData.repeatPanos.push(city + '-' + labelID);

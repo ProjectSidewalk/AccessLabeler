@@ -32,6 +32,7 @@
             panoList += <%=FileManager.getFilesInDirectory(d)%>
         <% } %>
 
+        <%-- String containing all previously fetched panos in all specified directories.--%>
         const previouslyFetchedPanos = panoList;
 
         window.addEventListener('error',function(error, url, line) {
