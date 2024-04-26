@@ -8,8 +8,9 @@ $(function() {
     // LABEL_DATA_SEATTLE_VALIDATED: seattle-validated
     // LABEL_DATA_NEW_LABELLED: feb-28-labelled
     // LABEL_DATA_NEW_VALIDATED: feb-28-validated
+    // LABEL_DATA_NOT_JM: NotJonMikey
     const START_IDX = 0;
-    const N_PANOS_TO_FETCH= LABEL_DATA_NEW_VALIDATED.length;
+    const N_PANOS_TO_FETCH= LABEL_DATA_NEW_LABELLED.length;
 
     let googleMapsService = null;
 
@@ -19,6 +20,9 @@ $(function() {
         ORADELL: 'oradell',
         PITTSBURGH: 'pittsburgh',
         CHICAGO: 'chicago',
+        NEWBERG: 'newberg',
+        AMSTERDAM: 'amsterdam',
+        WALLA_WALLA: 'walla_walla',
     }
 
     // Enum for label types of crops in the dataset.
@@ -41,17 +45,28 @@ $(function() {
         VALIDATED: 'validated',
         NEWLABELLED: 'feb-28-labelled',
         NEWVALIDATED: 'feb-28-validated',
+        NOJM: 'not-validated-by-jon-mikey',
         OTHER: 'other',
     }
 
-    const cityList = [CITY.SEATTLE, CITY.ORADELL, CITY.CHICAGO];
-    const labelTypeList = [LABEL_TYPE.CROSSWALK];
+    const cityList = [CITY.CHICAGO]; // , CITY.PITTSBURGH, CITY.CHICAGO];
+    const labelTypeList = [// LABEL_TYPE.OBSTACLE,
+        // LABEL_TYPE.SIGNAL,
+        // LABEL_TYPE.CROSSWALK,
+        LABEL_TYPE.SURFACEPROBLEM
+        // LABEL_TYPE.CURBRAMP,
+        // LABEL_TYPE.NOCURBRAMP,
+        // LABEL_TYPE.NOSIDEWALK,
+        // LABEL_TYPE.OTHER,
+        // LABEL_TYPE.OCCLUSION,
+        // LABEL_TYPE.PROBLEM
+    ];
 
     // todo: add documentation and clearly and concisely mention what these fields capture. Maybe add a few examples.
     const logData = {
         'city': CITY.CHICAGO, // Which city the crops we want to fetch from.
         'labelType': LABEL_TYPE.OBSTACLE, // Which label type the crops we want to fetch of.
-        'dataset': DATASET.NEWVALIDATED, // Which dataset the crops we want to fetch from.
+        'dataset': DATASET.NOJM, // Which dataset the crops we want to fetch from.
         'failedPanos': [], // We checked directly that this is expired
         'succeededPanos': [], // Successfully fetched
         'expiredPanos': [], // ProjectSidewalk knows it is expired
@@ -75,7 +90,8 @@ $(function() {
         };
 
         const d = {
-            'name': 'log-' + logData.city + '-' + logData.labelType + '-' + logData.dataset + '.json',
+            'name': 'debug-log',
+            // 'name': 'log-' + logData.city + '-' + logData.labelType + '-' + logData.dataset + '-part2.json',
             'data': JSON.stringify(data)
         }
 
@@ -171,6 +187,12 @@ $(function() {
             method: 'GET',
             url: 'https://maps.googleapis.com/maps/api/streetview/metadata?pano=' + panoID + '&key=AIzaSyBmlVct28ooFui9xThE2ZSgugQ9gEI2cZo',
             success: function(result) {
+                // Set to known expired image.
+                if (!(panorama.getPano() === "VG3lawyQ0V1_9PT33E7CEw")) {
+                    panorama.setPano("VG3lawyQ0V1_9PT33E7CEw");
+                    console.log('Setting to known expired image. ');
+                }
+
                 if (result.status == 'ZERO_RESULTS') {
                     // Pano fetch failed because it expired
                     logData.failedPanos.push(city + '-' + labelID);
@@ -192,7 +214,10 @@ $(function() {
 
                     setTimeout(function() {
                         console.log('Saving screenshot for ' + city + '-' + labelID + '-' + labelTypeID + '.png');
-                        saveGSVScreenshot('gsv-' + city + '-' + labelID + '-' + labelTypeID + '.png', 'crops-' + city + '-' + labelTypeID + '-feb-28');
+                        saveGSVScreenshot('gsv-debug-' + city + '-' + labelID + '-' + labelTypeID + '.png',
+                             'crops-debug');
+                        // saveGSVScreenshot('gsv-' + city + '-' + labelID + '-' + labelTypeID + '.png',
+                        //     'crops-' + city + '-' + labelTypeID + '-not-validated-by-jon-mikey');
                     }, 5500);
                 }
             }
@@ -215,7 +240,7 @@ $(function() {
                 console.log('Log file has been reset for new city / label type. ');
                 for (let i= START_IDX; i < N_PANOS_TO_FETCH; i++) {
 
-                    const labelData = LABEL_DATA_NEW_VALIDATED[i];
+                    const labelData = LABEL_DATA_NEW_LABELLED[i];
 
                     let labelID;
                     let labelTypeID;

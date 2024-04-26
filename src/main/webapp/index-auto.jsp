@@ -2,13 +2,16 @@
 <%@ page import="java.util.ArrayList" %>
 
 <%
-    String[] cityList = {"seattle", "oradell", "chicago"};
-    String[] labelTypeIDs = {"Crosswalk"};
+    String[] cityList = {"seattle"}; //, "oradell", "pittsburgh", "chicago"};
+    String[] labelTypeIDs = {"Obstacle", "Signal", "Crosswalk", "SurfaceProblem",
+            "CurbRamp", "NoCurbRamp", "NoSidewalk", "Other", "Occlusion", "Problem"};
     ArrayList<String> dirName = new ArrayList<>();
 
     for (String city : cityList) {
         for (String label_type : labelTypeIDs) {
             dirName.add("crops-" + city + '-' + label_type);
+            dirName.add("crops-" + city + '-' + label_type + "-feb-28");
+            dirName.add("crops-" + city + '-' + label_type + "-not-validated-by-jon-mikey");
         }
     }
 %>
@@ -55,8 +58,12 @@
     <script src="js/labelData-seattle-validated.js"></script>
     <script src="js/labelData-feb-28-validated.js"></script>
 
+    <%-- This contains the labels NOT validated by Mikey and Jon.--%>
+    <script src="js/labelData-NotJonMikey.js"></script>
+
     <%-- This contains the information about whether the pano is expired or not.--%>
     <script src="js/labelData-seattle-all.js"></script>
+    <script src="js/labelData-amsterdam-all.js"></script>
 
     <script src="js/index-auto.js"></script>
 </head>
